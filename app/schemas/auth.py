@@ -1,4 +1,5 @@
 # SMS 인증 및 회원가입/로그인 요청·응답 스키마
+import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.user import GenderEnum
@@ -39,7 +40,7 @@ class RegisterRequest(BaseModel):
 class RegisterResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     phone: str
     name: str
 
@@ -51,6 +52,6 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
+    refresh_token: str
     access_token: str
     token_type: str = "bearer"
