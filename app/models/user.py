@@ -52,7 +52,10 @@ class User(Base, TimestampMixin):
         "UserPhoto", back_populates="user", lazy="select"
     )
     likes_sent: Mapped[list["Like"]] = relationship(
-        "Like", foreign_keys="Like.from_user_id", back_populates="from_user", lazy="select"
+        "Like",
+        foreign_keys="Like.from_user_id",
+        back_populates="from_user",
+        lazy="select",
     )
     likes_received: Mapped[list["Like"]] = relationship(
         "Like", foreign_keys="Like.to_user_id", back_populates="to_user", lazy="select"
@@ -64,16 +67,28 @@ class User(Base, TimestampMixin):
         "Match", foreign_keys="Match.user2_id", back_populates="user2", lazy="select"
     )
     blocks_given: Mapped[list["Block"]] = relationship(
-        "Block", foreign_keys="Block.blocker_id", back_populates="blocker", lazy="select"
+        "Block",
+        foreign_keys="Block.blocker_id",
+        back_populates="blocker",
+        lazy="select",
     )
     blocks_received: Mapped[list["Block"]] = relationship(
-        "Block", foreign_keys="Block.blocked_id", back_populates="blocked", lazy="select"
+        "Block",
+        foreign_keys="Block.blocked_id",
+        back_populates="blocked",
+        lazy="select",
     )
     reports_sent: Mapped[list["Report"]] = relationship(
-        "Report", foreign_keys="Report.reporter_id", back_populates="reporter", lazy="select"
+        "Report",
+        foreign_keys="Report.reporter_id",
+        back_populates="reporter",
+        lazy="select",
     )
     reports_received: Mapped[list["Report"]] = relationship(
-        "Report", foreign_keys="Report.reported_id", back_populates="reported", lazy="select"
+        "Report",
+        foreign_keys="Report.reported_id",
+        back_populates="reported",
+        lazy="select",
     )
     point: Mapped["Point"] = relationship(
         "Point", back_populates="user", uselist=False, lazy="select"
