@@ -1,4 +1,3 @@
-# 환경변수 설정 관리 (pydantic-settings 기반)
 from pydantic_settings import BaseSettings
 
 
@@ -9,31 +8,32 @@ class Settings(BaseSettings):
     # JWT 인증
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # AWS S3
-    AWS_ACCESS_KEY_ID: str
-    AWS_SECRET_ACCESS_KEY: str
-    AWS_S3_BUCKET: str
-    AWS_REGION: str
+    # AWS S3 (실제 연동 시 필수로 변경)
+    AWS_ACCESS_KEY_ID: str = ""
+    AWS_SECRET_ACCESS_KEY: str = ""
+    AWS_S3_BUCKET: str = ""
+    AWS_REGION: str = "ap-northeast-2"
 
-    # Solapi SMS
-    SOLAPI_API_KEY: str
-    SOLAPI_API_SECRET: str
-    SOLAPI_SENDER: str
+    # Solapi SMS (실제 연동 시 필수로 변경)
+    SOLAPI_API_KEY: str = ""
+    SOLAPI_API_SECRET: str = ""
+    SOLAPI_SENDER: str = ""
 
-    # Google Cloud Vision
-    GOOGLE_APPLICATION_CREDENTIALS: str
+    # Google Cloud Vision (실제 연동 시 필수로 변경)
+    GOOGLE_APPLICATION_CREDENTIALS: str = ""
 
-    # Firebase
-    FIREBASE_CREDENTIALS_PATH: str
+    # Firebase (실제 연동 시 필수로 변경)
+    FIREBASE_CREDENTIALS_PATH: str = ""
 
     # Sentry (선택)
     SENTRY_DSN: str = ""
 
-    # Supabase
-    SUPABASE_URL: str
-    SUPABASE_ANON_KEY: str
+    # Supabase (실제 연동 시 필수로 변경)
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
 
     class Config:
         env_file = ".env"
