@@ -12,6 +12,9 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # 환경변수에서 DB URL 주입 (alembic.ini의 빈 값을 덮어씀)
+from dotenv import load_dotenv
+
+load_dotenv()
 config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
 
 # 모델 추가 후 아래 주석 해제하여 autogenerate 활성화
