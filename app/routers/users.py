@@ -1,13 +1,23 @@
-# 유저 관련 라우터 — 현재 로그인한 유저 정보 조회
 from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
-from app.schemas.auth import RegisterResponse
+from app.schemas.users import UpdateProfileRequest, UserProfileResponse
+from app.services import users as users_service
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=RegisterResponse)
+@router.get("/me", response_model=UserProfileResponse)
 def get_me(current_user: User = Depends(get_current_user)) -> User:
     return current_user
+
+
+@router.put("/me", response_model=UserProfileResponse)
+def update_me(
+    body: UpdateProfileRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return users_service.update_profile(db, current_user, body)
