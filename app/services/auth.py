@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.auth import SmsVerification
 from app.models.user import User
 from app.schemas.auth import RegisterRequest
@@ -85,3 +85,31 @@ def login_user(db: Session, phone: str) -> dict:
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+def refresh_access_token(db: Session, refresh_token: str) -> dict:
+    try:
+        payload = decode_token(refresh_token)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다."
+        )
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다."
+        )
+
+    subject = payload.get("sub")
+    if not subject:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다."
+        )
+    user = db.query(User).filter(User.id == subject).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="등록된 회원이 아닙니다."
+        )
+
+    access_token = create_access_token(subject=str(user.id))
+    return {"access_token": access_token}

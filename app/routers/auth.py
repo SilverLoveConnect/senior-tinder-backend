@@ -14,6 +14,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.services import auth as auth_service
+from app.schemas.auth import RefreshRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -40,4 +41,10 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 def login(body: LoginRequest, db: Session = Depends(get_db)):
     auth_service.verify_sms_code(db, body.phone, body.code)
     tokens = auth_service.login_user(db, body.phone)
+    return TokenResponse(**tokens)
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(body: RefreshRequest, db: Session = Depends(get_db)):
+    tokens = auth_service.refresh_access_token(db, body.refresh_token)
     return TokenResponse(**tokens)
