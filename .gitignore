@@ -41,3 +41,5 @@ htmlcov/
 
 # 빌드 아티팩트
 requirements.txt
+.clj-kondo/
+.lsp/
