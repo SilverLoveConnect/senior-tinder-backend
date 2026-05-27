@@ -22,3 +22,8 @@ class MatchingListResponse(BaseModel):
     users: list[MatchingUserResponse]
     next_cursor: str | None
     has_next: bool
+
+
+class LikeResponse(BaseModel):
+    is_matched: bool
+    match_id: str | None
