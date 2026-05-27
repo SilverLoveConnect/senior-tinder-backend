@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
-from app.routers import auth, users
+from app.routers import auth, matching, users
 
 # Sentry 초기화 (DSN이 설정된 경우에만)
 if settings.SENTRY_DSN:
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(matching.router)
 
 
 @app.get("/health")
