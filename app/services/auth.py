@@ -3,6 +3,7 @@ import string
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.auth import SmsVerification
@@ -29,9 +30,6 @@ def send_sms_code(db: Session, phone: str) -> None:
     print(f"[SMS] {phone} → 인증번호: {code}")
 
 
-from fastapi import HTTPException, status
-
-
 def verify_sms_code(db: Session, phone: str, code: str) -> bool:
 
     verification = (
@@ -41,13 +39,21 @@ def verify_sms_code(db: Session, phone: str, code: str) -> bool:
     )
 
     if not verification:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증번호를 먼저 요청해주세요",
+        )
 
     if datetime.now(timezone.utc) > verification.expires_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="인증번호가 만료됐습니다."
+        )
 
     if verification.code != code:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증번호가 올바르지 않습니다.",
+        )
 
     verification.is_used = True
     db.commit()

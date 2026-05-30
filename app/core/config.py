@@ -3,10 +3,10 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # 데이터베이스
-    DATABASE_URL: str
+    DATABASE_URL: str = ""
 
     # JWT 인증
-    SECRET_KEY: str
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     # Supabase (실제 연동 시 필수로 변경)
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
+    AI_API_URL: str = ""
 
     class Config:
         env_file = ".env"
