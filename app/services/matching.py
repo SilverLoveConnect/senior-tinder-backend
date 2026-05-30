@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from app.models.user import UserProfile
-
+from sqlalchemy import or_
 from app.models.user import User
 from app.models.matching import Like, Block, LikeStatusEnum, Match, ChatRoom
 from fastapi import HTTPException, status
@@ -112,3 +112,36 @@ def like_user(db: Session, current_user: User, target_user_id: str) -> dict:
 
     db.commit()
     return {"is_matched": False, "match_id": None}
+
+
+def get_matches(db: Session, current_user: User) -> dict:
+    matches = (
+        db.query(Match)
+        .filter(
+            or_(Match.user1_id == current_user.id, Match.user2_id == current_user.id)
+        )
+        .all()
+    )
+    result = []
+    for match in matches:
+
+        opponent = match.user2 if match.user1_id == current_user.id else match.user1
+
+    result.append(
+        {
+            "match_id": match.id,
+            "user": {
+                "id": opponent.id,
+                "name": opponent.name,
+                "age": opponent.age,
+                "region": opponent.region,
+                "manner_grade": (
+                    opponent.profile.manner_grade if opponent.profile else "normal"
+                ),
+            },
+            "matched_at": match.matched_at,
+            "chat_room_id": match.chat_room.id,
+        }
+    )
+
+    return {"matches": result}
