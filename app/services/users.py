@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.users import UpdateProfileRequest
+from app.services.manner import update_manner_score
+from app.models.manner import MannerFactorEnum
 
 
 def get_profile(user: User) -> dict:
@@ -39,7 +41,17 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
             user.profile.height = data.height
         if data.job is not None:
             user.profile.job = data.job
+    photo_count = len(user.photos)
+    bio_length = len(user.profile.bio or "")
 
+    if photo_count >= 3 or bio_length >= 100:
+        update_manner_score(
+            db=db,
+            user=user,
+            factor=MannerFactorEnum.profile,
+            delta=10,
+            reason="프로필 완성도 달성 (사진 3장+, 자기소개 100자+)",
+        )
     db.commit()
     db.refresh(user)
     return get_profile(user)

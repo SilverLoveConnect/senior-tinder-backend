@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.models.report import Report
 from app.models.user import User
 from app.schemas.report import ReportRequest
+from app.services.manner import update_manner_score
+from app.models.manner import MannerFactorEnum
 
 
 def create_report(db: Session, current_user: User, data: ReportRequest) -> dict:
@@ -36,6 +38,13 @@ def create_report(db: Session, current_user: User, data: ReportRequest) -> dict:
     db.add(report)
     db.flush()
 
+    update_manner_score(
+        db=db,
+        user=exited_user,
+        factor=MannerFactorEnum.report,
+        delta=-10,
+        reason=f"신고 접수 ({data.reason[:20]})",
+    )
     report_count = (
         db.query(Report).filter(Report.reported_id == data.reported_id).count()
     )
