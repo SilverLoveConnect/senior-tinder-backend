@@ -10,8 +10,8 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserProfileResponse)
-def get_me(current_user: User = Depends(get_current_user)) -> User:
-    return current_user
+def get_me(current_user: User = Depends(get_current_user)) -> dict:
+    return users_service.get_profile(current_user)
 
 
 @router.put("/me", response_model=UserProfileResponse)
