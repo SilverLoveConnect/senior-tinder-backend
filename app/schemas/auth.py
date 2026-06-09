@@ -9,7 +9,7 @@ _phone_field = Field(pattern=r"^010[0-9]{8}$")
 
 # TODO: 배포 전 examples 제거
 class SmsSendRequest(BaseModel):
-    phone: str = Field(pattern=r"^010[0-9]{8}$", examples=["01011480193"])
+    phone: str = Field(pattern=r"^010[0-9]{8}$", examples=["01012345678"])
 
 
 class SmsSendResponse(BaseModel):
@@ -47,7 +47,7 @@ class RegisterResponse(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    phone: str = Field(pattern=r"^010[0-9]{8}$", examples=["01011480193"])
+    phone: str = Field(pattern=r"^010[0-9]{8}$", examples=["01012345678"])
     code: str = Field(min_length=6, max_length=6, examples=["123456"])
 
 
