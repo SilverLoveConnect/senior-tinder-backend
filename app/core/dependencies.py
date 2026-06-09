@@ -22,11 +22,14 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+from app.models.user import User
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
-) -> Any:
-    """JWT 토큰 검증 후 현재 유저 반환 (stub — 유저 모델 추가 후 구현)"""
+) -> User:
+    """JWT 토큰 검증 후 현재 유저 반환"""
     token = credentials.credentials
     try:
         payload = jwt.decode(
@@ -38,10 +41,32 @@ def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="토큰에서 사용자 정보를 찾을 수 없습니다.",
             )
+        # refresh token으로 접근 차단
+        if payload.get("type") == "refresh":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="refresh token으로는 접근할 수 없습니다.",
+            )
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="유효하지 않은 토큰입니다.",
         )
-    # TODO: User 모델 추가 후 db.get(User, subject) 로 교체
-    return {"id": subject}
+
+    user = db.query(User).filter(User.id == subject).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="존재하지 않는 유저입니다.",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="비활성화된 계정입니다.",
+        )
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="정지된 계정입니다.",
+        )
+    return user

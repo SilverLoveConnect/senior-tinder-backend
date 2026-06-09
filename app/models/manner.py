@@ -20,6 +20,7 @@ class MannerFactorEnum(str, enum.Enum):
     profile = "profile"
     verified = "verified"
     activity = "activity"
+    image_analysis = "image_analysis"
 
 
 class MannerHistory(Base, TimestampMixin):
@@ -31,8 +32,12 @@ class MannerHistory(Base, TimestampMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
-    factor: Mapped[MannerFactorEnum] = mapped_column(SAEnum(MannerFactorEnum), nullable=False)
+    factor: Mapped[MannerFactorEnum] = mapped_column(
+        SAEnum(MannerFactorEnum), nullable=False
+    )
     delta: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[str | None] = mapped_column(String, nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="manner_histories", lazy="select")
+    user: Mapped["User"] = relationship(
+        "User", back_populates="manner_histories", lazy="select"
+    )

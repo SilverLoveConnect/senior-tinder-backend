@@ -4,7 +4,16 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Integer, String, func, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum as SAEnum,
+    ForeignKey,
+    Integer,
+    String,
+    func,
+    text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -30,6 +39,7 @@ class PaymentStatusEnum(str, enum.Enum):
 
 class SubscriptionPlanEnum(str, enum.Enum):
     basic = "basic"
+    gold = "gold"
 
 
 class SubscriptionStatusEnum(str, enum.Enum):
@@ -49,12 +59,16 @@ class Payment(Base, TimestampMixin):
     )
     imp_uid: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     amount: Mapped[int] = mapped_column(Integer, nullable=False)
-    type: Mapped[PaymentTypeEnum] = mapped_column(SAEnum(PaymentTypeEnum), nullable=False)
+    type: Mapped[PaymentTypeEnum] = mapped_column(
+        SAEnum(PaymentTypeEnum), nullable=False
+    )
     status: Mapped[PaymentStatusEnum] = mapped_column(
         SAEnum(PaymentStatusEnum), default=PaymentStatusEnum.paid, nullable=False
     )
 
-    user: Mapped["User"] = relationship("User", back_populates="payments", lazy="select")
+    user: Mapped["User"] = relationship(
+        "User", back_populates="payments", lazy="select"
+    )
     badge: Mapped["Badge | None"] = relationship(
         "Badge", back_populates="payment", uselist=False, lazy="select"
     )
@@ -76,14 +90,20 @@ class Subscription(Base, TimestampMixin):
         SAEnum(SubscriptionPlanEnum), default=SubscriptionPlanEnum.basic, nullable=False
     )
     status: Mapped[SubscriptionStatusEnum] = mapped_column(
-        SAEnum(SubscriptionStatusEnum), default=SubscriptionStatusEnum.active, nullable=False
+        SAEnum(SubscriptionStatusEnum),
+        default=SubscriptionStatusEnum.active,
+        nullable=False,
     )
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
-    user: Mapped["User"] = relationship("User", back_populates="subscriptions", lazy="select")
+    user: Mapped["User"] = relationship(
+        "User", back_populates="subscriptions", lazy="select"
+    )
 
 
 class Badge(Base, TimestampMixin):
@@ -104,7 +124,9 @@ class Badge(Base, TimestampMixin):
     )
 
     user: Mapped["User"] = relationship("User", back_populates="badges", lazy="select")
-    payment: Mapped["Payment"] = relationship("Payment", back_populates="badge", lazy="select")
+    payment: Mapped["Payment"] = relationship(
+        "Payment", back_populates="badge", lazy="select"
+    )
 
 
 class Boost(Base, TimestampMixin):
@@ -122,8 +144,12 @@ class Boost(Base, TimestampMixin):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="boosts", lazy="select")
-    payment: Mapped["Payment"] = relationship("Payment", back_populates="boost", lazy="select")
+    payment: Mapped["Payment"] = relationship(
+        "Payment", back_populates="boost", lazy="select"
+    )

@@ -3,11 +3,13 @@ import string
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
+from fastapi import HTTPException, status
 
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.auth import SmsVerification
-from app.models.user import User
+from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
+from app.models.point import Point
 
 
 def generate_code() -> str:
@@ -29,9 +31,6 @@ def send_sms_code(db: Session, phone: str) -> None:
     print(f"[SMS] {phone} → 인증번호: {code}")
 
 
-from fastapi import HTTPException, status
-
-
 def verify_sms_code(db: Session, phone: str, code: str) -> bool:
 
     verification = (
@@ -41,13 +40,21 @@ def verify_sms_code(db: Session, phone: str, code: str) -> bool:
     )
 
     if not verification:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증번호를 먼저 요청해주세요",
+        )
 
     if datetime.now(timezone.utc) > verification.expires_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="인증번호가 만료됐습니다."
+        )
 
     if verification.code != code:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="???")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="인증번호가 올바르지 않습니다.",
+        )
 
     verification.is_used = True
     db.commit()
@@ -68,6 +75,12 @@ def register_user(db: Session, data: RegisterRequest) -> User:
         region=data.region,
     )
     db.add(user)
+    db.flush()
+
+    profile = UserProfile(user_id=user.id)
+    db.add(profile)
+    point = Point(user_id=user.id)
+    db.add(point)
     db.commit()
     db.refresh(user)
     return user
@@ -85,3 +98,31 @@ def login_user(db: Session, phone: str) -> dict:
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+def refresh_access_token(db: Session, refresh_token: str) -> dict:
+    try:
+        payload = decode_token(refresh_token)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다."
+        )
+
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다."
+        )
+
+    subject = payload.get("sub")
+    if not subject:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다."
+        )
+    user = db.query(User).filter(User.id == subject).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="등록된 회원이 아닙니다."
+        )
+
+    access_token = create_access_token(subject=str(user.id))
+    return {"access_token": access_token}
