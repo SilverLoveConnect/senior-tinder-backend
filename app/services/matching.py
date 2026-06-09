@@ -127,21 +127,21 @@ def get_matches(db: Session, current_user: User) -> dict:
 
         opponent = match.user2 if match.user1_id == current_user.id else match.user1
 
-    result.append(
-        {
-            "match_id": match.id,
-            "user": {
-                "id": opponent.id,
-                "name": opponent.name,
-                "age": opponent.age,
-                "region": opponent.region,
-                "manner_grade": (
-                    opponent.profile.manner_grade if opponent.profile else "normal"
-                ),
-            },
-            "matched_at": match.matched_at,
-            "chat_room_id": match.chat_room.id,
-        }
-    )
+        result.append(
+            {
+                "match_id": match.id,
+                "user": {
+                    "id": opponent.id,
+                    "name": opponent.name,
+                    "age": opponent.age,
+                    "region": opponent.region,
+                    "manner_grade": (
+                        opponent.profile.manner_grade if opponent.profile else "normal"
+                    ),
+                },
+                "matched_at": match.matched_at,
+                "chat_room_id": match.chat_room.id,
+            }
+        )
 
     return {"matches": result}
