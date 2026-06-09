@@ -9,6 +9,7 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.models.auth import SmsVerification
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
+from app.models.point import Point
 
 
 def generate_code() -> str:
@@ -78,6 +79,8 @@ def register_user(db: Session, data: RegisterRequest) -> User:
 
     profile = UserProfile(user_id=user.id)
     db.add(profile)
+    point = Point(user_id=user.id)
+    db.add(point)
     db.commit()
     db.refresh(user)
     return user
