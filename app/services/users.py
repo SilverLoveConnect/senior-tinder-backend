@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.users import UpdateProfileRequest
-from app.services.manner import update_manner_score
+from app.services.manner import update_trust_score
 from app.models.manner import MannerFactorEnum
 
 
@@ -9,7 +9,7 @@ def get_profile(user: User) -> dict:
     return {
         "id": user.id,
         "phone": user.phone,
-        "name": user.name,
+        "nickname": user.name,
         "age": user.age,
         "gender": user.gender,
         "region": user.region,
@@ -18,9 +18,10 @@ def get_profile(user: User) -> dict:
         "interests": user.profile.interests if user.profile else None,
         "height": user.profile.height if user.profile else None,
         "job": user.profile.job if user.profile else None,
-        "manner_score": user.profile.manner_score if user.profile else 50,
-        "manner_grade": user.profile.manner_grade if user.profile else "normal",
+        "trust_score": user.profile.trust_score if user.profile else 50,
+        "trust_grade": user.profile.trust_grade if user.profile else "normal",
         "is_verified": user.profile.is_verified if user.profile else False,
+        "photos": [p.s3_url for p in user.photos if p.is_approved],
     }
 
 
@@ -41,17 +42,18 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
             user.profile.height = data.height
         if data.job is not None:
             user.profile.job = data.job
-    photo_count = len(user.photos)
-    bio_length = len(user.profile.bio or "")
 
-    if photo_count >= 3 or bio_length >= 100:
-        update_manner_score(
-            db=db,
-            user=user,
-            factor=MannerFactorEnum.profile,
-            delta=10,
-            reason="프로필 완성도 달성 (사진 3장+, 자기소개 100자+)",
-        )
+        photo_count = len(user.photos)
+        bio_length = len(user.profile.bio or "")
+
+        if photo_count >= 3 or bio_length >= 100:
+            update_trust_score(
+                db=db,
+                user=user,
+                factor=MannerFactorEnum.profile,
+                delta=10,
+                reason="프로필 완성도 달성 (사진 3장+, 자기소개 100자+)",
+            )
     db.commit()
     db.refresh(user)
     return get_profile(user)

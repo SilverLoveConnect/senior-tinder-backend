@@ -26,8 +26,11 @@ def send_sms_code(db: Session, phone: str) -> None:
     )
     db.add(verification)
     db.commit()
-    # (TODO: SOLAPI 연동) 추후에 해야함!!!!!!
-    print(f"[SMS] {phone} → 인증번호: {code}")
+    from app.services.sms import send_verification_sms
+
+    # 테스트용 나중에 지울거
+    print(f"{phone}->{code}")
+    send_verification_sms(phone, code)
 
 
 def verify_sms_code(db: Session, phone: str, code: str) -> bool:

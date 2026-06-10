@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.user import UserPhoto
 from app.models.manner import MannerFactorEnum
 from app.schemas.internal import AIPhotoResultRequest
-from app.services.manner import update_manner_score
+from app.services.manner import update_trust_score
 
 
 def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
@@ -20,20 +20,23 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         db.commit()
         return {"message": "부적절한 사진", "photo_approved": False}
 
-    if not data.has_face:
-        photo.is_approved = False
-        db.commit()
-        return {"message": "얼굴이 감지되지 않았습니다.", "photo_approved": False}
-
-    if data.quality_score >= 0.6:
+    if data.photo_uploaded and data.face_detected:
         photo.is_approved = True
-        user = photo.user
-        update_manner_score(
+        update_trust_score(
             db=db,
-            user=user,
+            user=photo.user,
+            factor=MannerFactorEnum.image_analysis,
+            delta=15,
+            reason="프로필 사진 등록 및 얼굴 인식 완료",
+        )
+    elif data.photo_uploaded and not data.face_detected:
+        photo.is_approved = False
+        update_trust_score(
+            db=db,
+            user=photo.user,
             factor=MannerFactorEnum.image_analysis,
             delta=5,
-            reason="프로필 사진 품질 통과",
+            reason="프로필 사진 업로드 완료",
         )
     else:
         photo.is_approved = False
