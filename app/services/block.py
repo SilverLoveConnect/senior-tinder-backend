@@ -13,6 +13,20 @@ def create_block(db: Session, current_user: User, target_user_id: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="등록되지 않은 회원입니다."
         )
+
+    existing = (
+        db.query(Block)
+        .filter(
+            Block.blocker_id == current_user.id,
+            Block.blocked_id == target_user_id,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="이미 차단한 회원입니다."
+        )
+
     block = Block(blocker_id=current_user.id, blocked_id=target_user_id)
     db.add(block)
     db.commit()

@@ -19,13 +19,15 @@ class UserProfileResponse(BaseModel):
 
     id: uuid.UUID
     phone: str
-    name: str
+    nickname: str
+    age: int
     region: str | None = None
     bio: str | None = None
     life_story: str | None = None
     interests: list[str] | None = None
     height: int | None = None
     job: str | None = None
-    manner_score: int = 50
-    manner_grade: str = "normal"
+    trust_score: int = 50
+    trust_grade: str = "normal"
     is_verified: bool = False
+    photos: list[str] = []

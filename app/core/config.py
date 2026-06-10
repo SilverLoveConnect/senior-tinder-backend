@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     SUPABASE_URL: str = ""
     SUPABASE_ANON_KEY: str = ""
     AI_API_URL: str = ""
+    # 포트원 V1
+    PORTONE_IMP_KEY: str = ""
+    PORTONE_IMP_SECRET: str = ""
+
+    # Supabase
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
 
     class Config:
         env_file = ".env"

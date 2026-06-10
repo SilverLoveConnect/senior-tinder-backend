@@ -48,7 +48,7 @@ def get_matching_users(
         query = query.filter(User.id > cursor)
 
     query = query.join(UserProfile, User.id == UserProfile.user_id).order_by(
-        UserProfile.manner_score.desc(), User.id.asc()
+        UserProfile.trust_score.desc(), User.id.asc()
     )
     users = query.limit(size + 1).all()
 
@@ -59,8 +59,24 @@ def get_matching_users(
 
     next_cursor = str(users[-1].id) if has_next else None
 
+    result_users = [
+        {
+            "id": user.id,
+            "nickname": user.name,
+            "age": user.age,
+            "region": user.region,
+            "bio": user.profile.bio if user.profile else None,
+            "interests": user.profile.interests if user.profile else None,
+            "trust_score": user.profile.trust_score if user.profile else 50,
+            "trust_grade": user.profile.trust_grade if user.profile else "normal",
+            "is_verified": user.profile.is_verified if user.profile else False,
+            "photos": [p.s3_url for p in user.photos if p.is_approved],
+        }
+        for user in users
+    ]
+
     return {
-        "users": users,
+        "users": result_users,
         "next_cursor": next_cursor,
         "has_next": has_next,
     }
@@ -132,11 +148,11 @@ def get_matches(db: Session, current_user: User) -> dict:
                 "match_id": match.id,
                 "user": {
                     "id": opponent.id,
-                    "name": opponent.name,
+                    "nickname": opponent.name,
                     "age": opponent.age,
                     "region": opponent.region,
-                    "manner_grade": (
-                        opponent.profile.manner_grade if opponent.profile else "normal"
+                    "trust_grade": (
+                        opponent.profile.trust_grade if opponent.profile else "normal"
                     ),
                 },
                 "matched_at": match.matched_at,

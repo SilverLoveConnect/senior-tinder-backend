@@ -14,6 +14,8 @@ class AIPhotoResultRequest(BaseModel):
     inappropriate_score: float
     quality_score: float
     analysis_status: str  # "completed" | "failed"
+    photo_uploaded: bool = True
+    face_detected: bool = False
 
 
 class AIPhotoResultResponse(BaseModel):
