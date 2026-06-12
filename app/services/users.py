@@ -9,7 +9,8 @@ def get_profile(user: User) -> dict:
     return {
         "id": user.id,
         "phone": user.phone,
-        "nickname": user.name,
+        "name": user.name,
+        "nickname": user.nickname or user.name,
         "age": user.age,
         "gender": user.gender,
         "region": user.region,
@@ -28,6 +29,8 @@ def get_profile(user: User) -> dict:
 def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
     if data.name is not None:
         user.name = data.name
+    if data.nickname is not None:
+        user.nickname = data.nickname
     if data.region is not None:
         user.region = data.region
 

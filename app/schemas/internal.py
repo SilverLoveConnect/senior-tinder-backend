@@ -13,9 +13,8 @@ class AIPhotoResultRequest(BaseModel):
     is_inappropriate: bool
     inappropriate_score: float
     quality_score: float
-    analysis_status: str  # "completed" | "failed"
-    photo_uploaded: bool = True
-    face_detected: bool = False
+    analysis_status: str  # "success" | "error"
+    error_message: str | None = None
 
 
 class AIPhotoResultResponse(BaseModel):

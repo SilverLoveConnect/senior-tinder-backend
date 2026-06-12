@@ -23,8 +23,12 @@ def update_trust_score(
     db.flush()
 
 
-def recalculate_trust_grade(user_profile: UserProfile) -> MannerGradeEnum:
+def recalculate_trust_grade(
+    user_profile: UserProfile, report_count: int = 0
+) -> MannerGradeEnum:
     score = user_profile.trust_score
+    if report_count >= 3:
+        return MannerGradeEnum.warning
     if score >= 90:
         return MannerGradeEnum.gold
     elif score >= 70:
