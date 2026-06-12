@@ -13,9 +13,9 @@ class AIPhotoResultRequest(BaseModel):
     is_inappropriate: bool
     inappropriate_score: float
     quality_score: float
-    analysis_status: str  # "completed" | "failed"
+    analysis_status: str  # "success" | "error"  ← AI 서버 기준으로 통일
     photo_uploaded: bool = True
-    face_detected: bool = False
+    # face_detected 제거 — AI 서버는 has_face 필드로 전송 (위의 has_face 사용)
 
 
 class AIPhotoResultResponse(BaseModel):
