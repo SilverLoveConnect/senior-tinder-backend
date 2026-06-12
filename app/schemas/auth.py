@@ -33,6 +33,7 @@ class SmsVerifyResponse(BaseModel):
 class RegisterRequest(BaseModel):
     phone: str = _phone_field
     name: str = Field(min_length=2, max_length=20)
+    nickname: str = Field(min_length=2, max_length=20)
     age: int = Field(ge=50, le=100)
     gender: GenderEnum
     region: str | None = None

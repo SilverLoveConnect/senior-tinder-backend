@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
+from app.models.user import User
 
 bearer_scheme = HTTPBearer()
 
@@ -20,9 +21,6 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-
-
-from app.models.user import User
 
 
 def get_current_user(
