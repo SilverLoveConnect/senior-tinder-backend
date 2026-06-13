@@ -9,7 +9,7 @@ from app.services.manner import update_trust_score
 
 def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
     """AI 이미지 분석 결과 처리"""
-    if data.analysis_status == "error":
+    if data.analysis_status == "failed":
         return {"message": "분석 실패", "photo_approved": False}
     photo = db.query(UserPhoto).filter(UserPhoto.s3_url == data.s3_url).first()
     if not photo:
@@ -20,7 +20,7 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         db.commit()
         return {"message": "부적절한 사진", "photo_approved": False}
 
-    if data.photo_uploaded and data.has_face:
+    if data.photo_uploaded and data.face_detected:
         photo.is_approved = True
         update_trust_score(
             db=db,
@@ -29,7 +29,7 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
             delta=15,
             reason="프로필 사진 등록 및 얼굴 인식 완료",
         )
-    elif data.photo_uploaded and not data.has_face:
+    elif data.photo_uploaded and not data.face_detected:
         photo.is_approved = False
         update_trust_score(
             db=db,

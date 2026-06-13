@@ -23,6 +23,9 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
+from app.models.user import User
+
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),

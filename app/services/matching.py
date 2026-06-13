@@ -121,7 +121,7 @@ def like_user(db: Session, current_user: User, target_user_id: str) -> dict:
         db.add(match)
         db.flush()
 
-        chat_room = ChatRoom(match_id=match.id, supabase_channel=str(match.id))
+        chat_room = ChatRoom(match_id=match.id, supabase_channel=match.id)
         db.add(chat_room)
         db.commit()
         return {"is_matched": True, "match_id": str(match.id)}

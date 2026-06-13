@@ -103,7 +103,7 @@ def login_user(db: Session, phone: str) -> dict:
 def refresh_access_token(db: Session, refresh_token: str) -> dict:
     try:
         payload = decode_token(refresh_token)
-    except Exception:
+    except:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="유효하지 않은 토큰입니다."
         )
