@@ -9,14 +9,15 @@ class MatchingUserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    name: str
+    nickname: str
     age: int
     region: str | None = None
     bio: str | None = None
     interests: list[str] | None = None
-    manner_score: int = 50
-    manner_grade: str = "normal"
+    trust_score: int = 50
+    trust_grade: str = "normal"
     is_verified: bool = False
+    photos: list[str] = []
 
 
 class MatchingListResponse(BaseModel):
@@ -34,10 +35,10 @@ class MatchUserInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    name: str
+    nickname: str
     age: int
     region: str | None
-    manner_grade: str
+    trust_grade: str
 
 
 class MatchResponse(BaseModel):

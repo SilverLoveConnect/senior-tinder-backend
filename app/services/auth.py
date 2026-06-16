@@ -9,7 +9,6 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.models.auth import SmsVerification
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
-from app.models.point import Point
 
 
 def generate_code() -> str:
@@ -27,8 +26,11 @@ def send_sms_code(db: Session, phone: str) -> None:
     )
     db.add(verification)
     db.commit()
-    # (TODO: SOLAPI 연동) 추후에 해야함!!!!!!
-    print(f"[SMS] {phone} → 인증번호: {code}")
+    from app.services.sms import send_verification_sms
+
+    # 테스트용 나중에 지울거
+    print(f"{phone}->{code}")
+    send_verification_sms(phone, code)
 
 
 def verify_sms_code(db: Session, phone: str, code: str) -> bool:
@@ -70,6 +72,7 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     user = User(
         phone=data.phone,
         name=data.name,
+        nickname=data.nickname,
         age=data.age,
         gender=data.gender,
         region=data.region,
@@ -79,8 +82,6 @@ def register_user(db: Session, data: RegisterRequest) -> User:
 
     profile = UserProfile(user_id=user.id)
     db.add(profile)
-    point = Point(user_id=user.id)
-    db.add(point)
     db.commit()
     db.refresh(user)
     return user
