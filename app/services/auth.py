@@ -87,12 +87,16 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     return user
 
 
-def login_user(db: Session, phone: str) -> dict:
+def login_user(db: Session, phone: str, code: str) -> dict:
+    # 1. 유저 존재 먼저 확인 (코드 소비 없이)
+    # 신규 유저면 코드를 소비하지 않고 400 반환 → 회원가입 후 동일 코드로 재로그인 가능
     user = db.query(User).filter(User.phone == phone).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="존재하지 않는 회원입니다."
         )
+    # 2. 유저가 있을 때만 코드 검증 (여기서 is_used = True)
+    verify_sms_code(db, phone, code)
     access_token = create_access_token(subject=str(user.id))
     refresh_token = create_refresh_token(subject=str(user.id))
     return {

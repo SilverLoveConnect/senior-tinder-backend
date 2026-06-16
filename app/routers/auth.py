@@ -39,8 +39,9 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    auth_service.verify_sms_code(db, body.phone, body.code)
-    tokens = auth_service.login_user(db, body.phone)
+    # 유저 존재 먼저 확인 — 없으면 코드 소비 없이 400 반환
+    # (코드 소비 후 "없는 회원" 에러 → 회원가입 후 코드 재사용 불가 버그 방지)
+    tokens = auth_service.login_user(db, body.phone, body.code)
     return TokenResponse(**tokens)
 
 
