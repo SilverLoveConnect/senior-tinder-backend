@@ -72,6 +72,7 @@ def register_user(db: Session, data: RegisterRequest) -> User:
     user = User(
         phone=data.phone,
         name=data.name,
+        nickname=data.nickname,
         age=data.age,
         gender=data.gender,
         region=data.region,

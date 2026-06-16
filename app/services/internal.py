@@ -9,8 +9,9 @@ from app.services.manner import update_trust_score
 
 def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
     """AI 이미지 분석 결과 처리"""
-    if data.analysis_status == "failed":
+    if data.analysis_status == "error":
         return {"message": "분석 실패", "photo_approved": False}
+
     photo = db.query(UserPhoto).filter(UserPhoto.s3_url == data.s3_url).first()
     if not photo:
         raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
@@ -20,7 +21,12 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         db.commit()
         return {"message": "부적절한 사진", "photo_approved": False}
 
-    if data.photo_uploaded and data.face_detected:
+    if not data.has_face:
+        photo.is_approved = False
+        db.commit()
+        return {"message": "얼굴 인식 실패", "photo_approved": False}
+
+    if data.has_face:
         photo.is_approved = True
         update_trust_score(
             db=db,
@@ -29,8 +35,7 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
             delta=15,
             reason="프로필 사진 등록 및 얼굴 인식 완료",
         )
-    elif data.photo_uploaded and not data.face_detected:
-        photo.is_approved = False
+    else:
         update_trust_score(
             db=db,
             user=photo.user,
@@ -38,8 +43,6 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
             delta=5,
             reason="프로필 사진 업로드 완료",
         )
-    else:
-        photo.is_approved = False
 
     db.commit()
     return {"message": "처리 완료", "photo_approved": photo.is_approved}

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=20)
+    nickname: str | None = Field(default=None, min_length=2, max_length=20)
     region: str | None = None
     bio: str | None = None
     life_story: str | None = None
@@ -19,6 +20,7 @@ class UserProfileResponse(BaseModel):
 
     id: uuid.UUID
     phone: str
+    name: str
     nickname: str
     age: int
     region: str | None = None

@@ -38,6 +38,7 @@ class User(Base, TimestampMixin):
     )
     phone: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(50), nullable=True)
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     gender: Mapped[GenderEnum] = mapped_column(SAEnum(GenderEnum), nullable=False)
     region: Mapped[str | None] = mapped_column(String, nullable=True)
