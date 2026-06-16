@@ -38,6 +38,7 @@ class User(Base, TimestampMixin):
     )
     phone: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(50), nullable=True)
     age: Mapped[int] = mapped_column(Integer, nullable=False)
     gender: Mapped[GenderEnum] = mapped_column(SAEnum(GenderEnum), nullable=False)
     region: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -128,8 +129,8 @@ class UserProfile(Base, TimestampMixin):
     height: Mapped[int | None] = mapped_column(Integer, nullable=True)
     job: Mapped[str | None] = mapped_column(String, nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    manner_score: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
-    manner_grade: Mapped[MannerGradeEnum] = mapped_column(
+    trust_score: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
+    trust_grade: Mapped[MannerGradeEnum] = mapped_column(
         SAEnum(MannerGradeEnum), default=MannerGradeEnum.normal, nullable=False
     )
 
