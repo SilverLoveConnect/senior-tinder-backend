@@ -13,6 +13,6 @@ def send_verification_sms(phone: str, code: str) -> None:
     message = RequestMessage(
         to=phone,
         from_=settings.SOLAPI_SENDER,
-        text=f"[사랑은죽을때까지] 인증번호: {code}",
+        text=f"[시나브로] 인증번호: {code}",
     )
     service.send(message)

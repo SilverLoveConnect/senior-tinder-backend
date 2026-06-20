@@ -14,7 +14,7 @@ if settings.SENTRY_DSN:
     )
 
 app = FastAPI(
-    title="Senior Tinder API",
+    title="Sinabro API",
     version="0.1.0",
 )
 
