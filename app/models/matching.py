@@ -118,3 +118,21 @@ class Block(Base, TimestampMixin):
     blocked: Mapped["User"] = relationship(
         "User", foreign_keys=[blocked_id], back_populates="blocks_received", lazy="select"
     )
+
+
+class ChatMessage(Base, TimestampMixin):
+    __tablename__ = "chat_messages"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    room_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("chat_rooms.id"), nullable=False
+    )
+    sender_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
+    content: Mapped[str] = mapped_column(String, nullable=False)
+    is_scam: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    scam_type: Mapped[str | None] = mapped_column(String, nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
