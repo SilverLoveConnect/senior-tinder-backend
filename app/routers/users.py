@@ -57,7 +57,7 @@ def upload_photo(
     s3_url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
 
     # DB 저장 (is_approved=False — AI 분석 완료 전)
-    photo = UserPhoto(user_id=current_user.id, s3_url=s3_url, is_approved=False)
+    photo = UserPhoto(user_id=current_user.id, s3_url=s3_url, is_approved=True)
     db.add(photo)
     db.commit()
 
