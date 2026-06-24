@@ -7,6 +7,8 @@ from app.models.user import User
 from app.models.matching import Like, Block, LikeStatusEnum, Match, ChatRoom
 from fastapi import HTTPException, status
 
+from app.services.fcm import notify_new_match
+
 
 def get_matching_users(
     db: Session,
@@ -124,6 +126,13 @@ def like_user(db: Session, current_user: User, target_user_id: str) -> dict:
         chat_room = ChatRoom(match_id=match.id, supabase_channel=str(match.id))
         db.add(chat_room)
         db.commit()
+
+        if target_user.fcm_token:
+            notify_new_match(
+                token=target_user.fcm_token,
+                matched_user_nickname=current_user.nickname or current_user.name,
+            )
+
         return {"is_matched": True, "match_id": str(match.id)}
 
     db.commit()
