@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
 from app.models.matching import ChatMessage, ChatRoom, Match
 from app.models.user import User
+from app.services.fcm import notify_new_message
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -79,6 +80,16 @@ def send_message(
     db.add(msg)
     db.commit()
     db.refresh(msg)
+
+    match = db.query(Match).filter(Match.id == room.match_id).first()
+    opponent_id = match.user2_id if match.user1_id == current_user.id else match.user1_id
+    opponent = db.query(User).filter(User.id == opponent_id).first()
+    if opponent and opponent.fcm_token:
+        notify_new_message(
+            token=opponent.fcm_token,
+            sender_nickname=current_user.nickname or current_user.name,
+            message=body.content,
+        )
 
     return {
         "id": str(msg.id),

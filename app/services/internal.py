@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.user import UserPhoto
 from app.models.manner import MannerFactorEnum
 from app.schemas.internal import AIPhotoResultRequest
+from app.services.fcm import notify_photo_approved
 from app.services.manner import update_trust_score
 
 
@@ -45,4 +46,8 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         )
 
     db.commit()
+
+    if photo.is_approved and photo.user.fcm_token:
+        notify_photo_approved(token=photo.user.fcm_token)
+
     return {"message": "처리 완료", "photo_approved": photo.is_approved}
