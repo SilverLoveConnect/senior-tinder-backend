@@ -57,14 +57,14 @@ def upload_photo(
     s3_url = f"https://{settings.AWS_S3_BUCKET}.s3.{settings.AWS_REGION}.amazonaws.com/{key}"
 
     # DB 저장 (is_approved=False — AI 분석 완료 전)
-    photo = UserPhoto(user_id=current_user.id, s3_url=s3_url, is_approved=True)
+    photo = UserPhoto(user_id=current_user.id, s3_url=s3_url, is_approved=False)
     db.add(photo)
     db.commit()
 
     # AI 서버에 분석 요청 (실패해도 업로드는 성공 처리)
     try:
         httpx.post(
-            f"{settings.AI_API_URL}/api/v1/image/analyze/url",
+            settings.AI_IMAGE_API_URL,
             json={"s3_url": s3_url, "user_id": str(current_user.id)},
             timeout=3,
         )
