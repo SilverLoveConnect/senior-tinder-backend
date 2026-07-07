@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
+    # 내부 서비스(AI 서버 등) 콜백 인증 토큰
+    INTERNAL_TOKEN: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
