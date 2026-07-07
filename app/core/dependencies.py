@@ -2,7 +2,7 @@
 from collections.abc import Generator
 from typing import Any
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -71,3 +71,15 @@ def get_current_user(
             detail="정지된 계정입니다.",
         )
     return user
+
+
+def verify_internal_token(x_internal_token: str = Header(default="")):
+    """AI 서버 등 내부 서비스 콜백 인증"""
+    if not settings.INTERNAL_TOKEN:
+        # 환경변수 미설정 시 개발 환경으로 간주, 통과
+        return
+    if x_internal_token != settings.INTERNAL_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="내부 서비스 인증 실패",
+        )
