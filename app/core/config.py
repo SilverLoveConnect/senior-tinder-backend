@@ -1,12 +1,13 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    # 데이터베이스
-    DATABASE_URL: str = ""
+    # 데이터베이스 (필수 — 비어있으면 기동 실패)
+    DATABASE_URL: str = Field(min_length=1)
 
-    # JWT 인증
-    SECRET_KEY: str = ""
+    # JWT 인증 (SECRET_KEY 필수 — 비어있으면 기동 실패)
+    SECRET_KEY: str = Field(min_length=1)
     ALGORITHM: str = "HS256"
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -46,9 +47,24 @@ class Settings(BaseSettings):
     # 내부 서비스(AI 서버 등) 콜백 인증 토큰
     INTERNAL_TOKEN: str = ""
 
+    # 스토어 심사관 검수용 고정 인증코드 (두 값 모두 설정된 경우에만 활성화)
+    REVIEW_TEST_PHONE: str = ""
+    REVIEW_TEST_CODE: str = ""
+
+    # CORS 허용 도메인 (콤마 구분, 프로덕션 배포 환경변수로 설정)
+    # 비어있으면 전체 허용(로컬 개발 기본값) — 프로덕션에서는 반드시 설정할 것
+    CORS_ALLOWED_ORIGINS: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        """CORS_ALLOWED_ORIGINS가 비어있으면 전체 허용(로컬 개발 기본값)"""
+        if not self.CORS_ALLOWED_ORIGINS:
+            return ["*"]
+        return [origin.strip() for origin in self.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()]
 
 
 settings = Settings()

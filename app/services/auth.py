@@ -1,35 +1,94 @@
 import random
+import re
 import string
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
+from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, decode_token
-from app.models.auth import SmsVerification
+from app.models.auth import SmsSendLog, SmsVerification
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
+
+MAX_VERIFY_ATTEMPTS = 5
+SEND_RATE_LIMIT_INTERVAL = timedelta(minutes=1)
+SEND_RATE_LIMIT_DAILY_MAX = 10
 
 
 def generate_code() -> str:
     return "".join(random.choices(string.digits, k=6))
 
 
+def _normalize_phone(phone: str) -> str:
+    return re.sub(r"\D", "", phone)
+
+
+def _is_review_phone(phone: str) -> bool:
+    """심사관(App Store/Play Store) 검수용 전화번호인지 확인. 두 값이 모두 설정된 경우에만 활성화.
+    .env의 REVIEW_TEST_PHONE에 하이픈 등 구분자가 섞여 있어도 안전하게 매칭되도록 숫자만 비교."""
+    review_phone = settings.REVIEW_TEST_PHONE
+    return bool(review_phone) and _normalize_phone(phone) == _normalize_phone(review_phone)
+
+
 def send_sms_code(db: Session, phone: str) -> None:
+    if _is_review_phone(phone):
+        # 심사용 번호: rate limit/실제 SMS 발송 없이 고정 인증코드로 대체
+        db.query(SmsVerification).filter(SmsVerification.phone == phone).delete()
+        verification = SmsVerification(
+            phone=phone,
+            code=settings.REVIEW_TEST_CODE,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+        )
+        db.add(verification)
+        db.commit()
+        return
+
+    now = datetime.now(timezone.utc)
+
+    recent_send_exists = (
+        db.query(SmsSendLog)
+        .filter(
+            SmsSendLog.phone == phone,
+            SmsSendLog.created_at >= now - SEND_RATE_LIMIT_INTERVAL,
+        )
+        .first()
+        is not None
+    )
+    if recent_send_exists:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="잠시 후 다시 시도해주세요. (1분에 1회만 요청할 수 있습니다)",
+        )
+
+    daily_send_count = (
+        db.query(SmsSendLog)
+        .filter(
+            SmsSendLog.phone == phone,
+            SmsSendLog.created_at >= now - timedelta(days=1),
+        )
+        .count()
+    )
+    if daily_send_count >= SEND_RATE_LIMIT_DAILY_MAX:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="일일 인증번호 요청 횟수를 초과했습니다. 내일 다시 시도해주세요.",
+        )
+
     db.query(SmsVerification).filter(SmsVerification.phone == phone).delete()
 
     code = generate_code()
     verification = SmsVerification(
         phone=phone,
         code=code,
-        expires_at=datetime.now(timezone.utc) + timedelta(minutes=3),
+        expires_at=now + timedelta(minutes=3),
     )
     db.add(verification)
+    db.add(SmsSendLog(phone=phone))
     db.commit()
     from app.services.sms import send_verification_sms
 
-    # 테스트용 나중에 지울거
-    print(f"{phone}->{code}")
     send_verification_sms(phone, code)
 
 
@@ -53,6 +112,15 @@ def verify_sms_code(db: Session, phone: str, code: str) -> bool:
         )
 
     if verification.code != code:
+        verification.attempt_count += 1
+        if verification.attempt_count >= MAX_VERIFY_ATTEMPTS:
+            verification.is_used = True
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="인증 시도 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.",
+            )
+        db.commit()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="인증번호가 올바르지 않습니다.",

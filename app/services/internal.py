@@ -17,12 +17,10 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
     if not photo:
         raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
 
-    # ⚠️ 임시(베타): 부적절 필터 미학습 상태라 승인 판정 제외. 로그만 수집.
-    # 학습된 모델 배포 후 반드시 복원할 것 — 복원 전 일반 공개(런칭) 금지!
-    print(
-        f"[ai-photo] user={data.user_id} inappropriate={data.is_inappropriate}"
-        f"({data.inappropriate_score:.3f})"
-    )
+    if data.is_inappropriate:
+        photo.is_approved = False
+        db.commit()
+        return {"message": "부적절한 사진", "photo_approved": False}
 
     if not data.has_face:
         photo.is_approved = False
