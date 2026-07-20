@@ -20,7 +20,7 @@ from app.routers import (
 if settings.SENTRY_DSN:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
-        traces_sample_rate=1.0,
+        traces_sample_rate=0.1,
     )
 
 app = FastAPI(
@@ -28,10 +28,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS 미들웨어 — 개발환경 전체 허용
+# CORS 미들웨어 — CORS_ALLOWED_ORIGINS 미설정 시 전체 허용(로컬 개발 기본값)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
