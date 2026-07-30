@@ -48,6 +48,9 @@ class MatchResponse(BaseModel):
     user: MatchUserInfo
     matched_at: datetime
     chat_room_id: uuid.UUID
+    last_message: str | None = None
+    last_message_at: datetime | None = None
+    unread_count: int = 0
 
 
 class MatchListResponse(BaseModel):

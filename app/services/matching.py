@@ -2,9 +2,9 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 from app.models.user import UserProfile
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from app.models.user import User
-from app.models.matching import Like, Block, LikeStatusEnum, Match, ChatRoom
+from app.models.matching import Like, Block, LikeStatusEnum, Match, ChatRoom, ChatMessage
 from fastapi import HTTPException, status
 
 from app.services.fcm import notify_new_match
@@ -147,10 +147,53 @@ def get_matches(db: Session, current_user: User) -> dict:
         )
         .all()
     )
+
+    if not matches:
+        return {"matches": []}
+
+    room_ids = [match.chat_room.id for match in matches if match.chat_room]
+
+    # 채팅방별 최근 메시지 1건 — DISTINCT ON으로 room당 한 번씩 조회 (N+1 방지)
+    last_message_by_room: dict[UUID, tuple[str, object]] = {}
+    if room_ids:
+        last_message_rows = (
+            db.query(
+                ChatMessage.room_id,
+                ChatMessage.content,
+                ChatMessage.created_at,
+            )
+            .filter(ChatMessage.room_id.in_(room_ids))
+            .order_by(ChatMessage.room_id, ChatMessage.created_at.desc())
+            .distinct(ChatMessage.room_id)
+            .all()
+        )
+        last_message_by_room = {
+            row.room_id: (row.content, row.created_at) for row in last_message_rows
+        }
+
+    # 채팅방별 안 읽은 메시지 수 — 단일 GROUP BY 쿼리로 조회 (N+1 방지)
+    unread_count_by_room: dict[UUID, int] = {}
+    if room_ids:
+        unread_rows = (
+            db.query(ChatMessage.room_id, func.count(ChatMessage.id))
+            .filter(
+                ChatMessage.room_id.in_(room_ids),
+                ChatMessage.is_read == False,
+                ChatMessage.sender_id != current_user.id,
+            )
+            .group_by(ChatMessage.room_id)
+            .all()
+        )
+        unread_count_by_room = {row[0]: row[1] for row in unread_rows}
+
     result = []
     for match in matches:
 
         opponent = match.user2 if match.user1_id == current_user.id else match.user1
+        chat_room_id = match.chat_room.id if match.chat_room else None
+        last_message, last_message_at = last_message_by_room.get(
+            chat_room_id, (None, None)
+        )
 
         result.append(
             {
@@ -165,7 +208,10 @@ def get_matches(db: Session, current_user: User) -> dict:
                     ),
                 },
                 "matched_at": match.matched_at,
-                "chat_room_id": match.chat_room.id,
+                "chat_room_id": chat_room_id,
+                "last_message": last_message,
+                "last_message_at": last_message_at,
+                "unread_count": unread_count_by_room.get(chat_room_id, 0),
             }
         )
 
