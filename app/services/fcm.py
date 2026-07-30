@@ -1,4 +1,6 @@
 # Firebase FCM 푸시 알림 발송 서비스
+import base64
+import json
 import logging
 
 import firebase_admin
@@ -9,11 +11,22 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 if not firebase_admin._apps:
-    if settings.FIREBASE_CREDENTIALS_PATH:
+    if settings.FIREBASE_CREDENTIALS_JSON:
+        # Railway 등 파일 업로드가 마땅찮은 환경 — Base64로 인코딩된 서비스
+        # 계정 JSON을 디코드해서 dict로 바로 넘긴다(파일 필요 없음).
+        try:
+            cred_info = json.loads(base64.b64decode(settings.FIREBASE_CREDENTIALS_JSON))
+            cred = credentials.Certificate(cred_info)
+            firebase_admin.initialize_app(cred)
+        except Exception:
+            logger.exception("FIREBASE_CREDENTIALS_JSON 파싱 실패 — FCM 초기화 스킵")
+    elif settings.FIREBASE_CREDENTIALS_PATH:
         cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
         firebase_admin.initialize_app(cred)
     else:
-        logger.warning("FIREBASE_CREDENTIALS_PATH가 설정되지 않아 FCM 초기화를 스킵합니다.")
+        logger.warning(
+            "FIREBASE_CREDENTIALS_JSON/FIREBASE_CREDENTIALS_PATH가 설정되지 않아 FCM 초기화를 스킵합니다."
+        )
 
 
 def send_push_notification(token: str, title: str, body: str, data: dict = None) -> bool:

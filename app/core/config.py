@@ -26,8 +26,11 @@ class Settings(BaseSettings):
     # Google Cloud Vision (실제 연동 시 필수로 변경)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
 
-    # Firebase (실제 연동 시 필수로 변경)
+    # Firebase — 로컬 개발: 서비스 계정 JSON 파일 경로
     FIREBASE_CREDENTIALS_PATH: str = ""
+    # Firebase — 프로덕션(Railway 등 파일 업로드가 마땅찮은 환경): 서비스 계정
+    # JSON 전체를 Base64로 인코딩한 값. 설정돼 있으면 PATH보다 우선한다.
+    FIREBASE_CREDENTIALS_JSON: str = ""
 
     # Sentry (선택)
     SENTRY_DSN: str = ""
