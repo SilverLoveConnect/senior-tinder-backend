@@ -15,6 +15,10 @@ from app.schemas.auth import RegisterRequest
 MAX_VERIFY_ATTEMPTS = 5
 SEND_RATE_LIMIT_INTERVAL = timedelta(minutes=1)
 SEND_RATE_LIMIT_DAILY_MAX = 10
+# register_user에서 "/auth/verify로 이미 인증을 마쳤는지"를 확인할 때 허용하는 유효 기간.
+# verify_sms_code를 그대로 재호출하면 is_used=True라서 재검증이 항상 실패하므로,
+# 최근에 같은 phone+code로 "성공 소비"된 인증 기록이 있는지만 확인한다.
+REGISTER_SMS_VERIFY_WINDOW = timedelta(minutes=15)
 
 
 def generate_code() -> str:
@@ -131,12 +135,45 @@ def verify_sms_code(db: Session, phone: str, code: str) -> bool:
     return True
 
 
+def _ensure_sms_verified_for_register(db: Session, phone: str, code: str) -> None:
+    """register 직전 SMS 인증 여부를 확인한다.
+
+    프론트는 /auth/verify(인증 확인 화면)에서 이미 verify_sms_code를 호출해
+    SmsVerification.is_used=True로 코드를 소비한다. 여기서 verify_sms_code를
+    그대로 다시 호출하면 "이미 사용됨" 처리로 항상 실패하므로, 대신 phone+code가
+    일치하고 최근 REGISTER_SMS_VERIFY_WINDOW 이내에 is_used=True로 소비된
+    인증 기록이 존재하는지만 확인한다.
+    """
+    verification = (
+        db.query(SmsVerification)
+        .filter(
+            SmsVerification.phone == phone,
+            SmsVerification.code == code,
+            SmsVerification.is_used == True,
+        )
+        .order_by(SmsVerification.created_at.desc())
+        .first()
+    )
+    if (
+        not verification
+        or verification.created_at
+        < datetime.now(timezone.utc) - REGISTER_SMS_VERIFY_WINDOW
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="SMS 인증을 먼저 완료해주세요.",
+        )
+
+
 def register_user(db: Session, data: RegisterRequest) -> User:
     user = db.query(User).filter(User.phone == data.phone).first()
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="이미 가입된 회원입니다."
         )
+
+    _ensure_sms_verified_for_register(db, data.phone, data.code)
+
     user = User(
         phone=data.phone,
         name=data.name,
