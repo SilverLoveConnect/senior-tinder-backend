@@ -4,6 +4,10 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class FcmTokenRequest(BaseModel):
+    fcm_token: str
+
+
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=20)
     nickname: str | None = Field(default=None, min_length=2, max_length=20)
