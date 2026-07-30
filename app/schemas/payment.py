@@ -1,9 +1,10 @@
 # 포인트 충전 및 구독 결제 요청·응답 스키마
+import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from app.models.payment import SubscriptionPlanEnum
+from app.models.payment import PaymentStatusEnum, PaymentTypeEnum, SubscriptionPlanEnum
 
 
 class PointChargeRequest(BaseModel):
@@ -27,3 +28,18 @@ class SubscriptionResponse(BaseModel):
     plan: SubscriptionPlanEnum
     expires_at: datetime
     is_active: bool
+
+
+class PaymentHistoryItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    imp_uid: str
+    amount: int
+    type: PaymentTypeEnum
+    status: PaymentStatusEnum
+    created_at: datetime
+
+
+class PaymentHistoryResponse(BaseModel):
+    payments: list[PaymentHistoryItem]
