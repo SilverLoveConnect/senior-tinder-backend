@@ -45,6 +45,9 @@ class User(Base, TimestampMixin):
     fcm_token: Mapped[str | None] = mapped_column(String, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    chat_push_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
+    )
 
     profile: Mapped["UserProfile"] = relationship(
         "UserProfile", back_populates="user", uselist=False, lazy="select"

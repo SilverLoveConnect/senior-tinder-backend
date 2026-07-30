@@ -84,7 +84,7 @@ def send_message(
     match = db.query(Match).filter(Match.id == room.match_id).first()
     opponent_id = match.user2_id if match.user1_id == current_user.id else match.user1_id
     opponent = db.query(User).filter(User.id == opponent_id).first()
-    if opponent and opponent.fcm_token:
+    if opponent and opponent.fcm_token and opponent.chat_push_enabled:
         notify_new_message(
             token=opponent.fcm_token,
             sender_nickname=current_user.nickname or current_user.name,

@@ -8,6 +8,16 @@ class FcmTokenRequest(BaseModel):
     fcm_token: str
 
 
+class UpdateSettingsRequest(BaseModel):
+    chat_push_enabled: bool
+
+
+class UpdateSettingsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    chat_push_enabled: bool
+
+
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=20)
     nickname: str | None = Field(default=None, min_length=2, max_length=20)

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models.user import User, UserPhoto
-from app.schemas.users import UpdateProfileRequest
+from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
 from app.services.manner import update_trust_score
 from app.models.manner import MannerFactorEnum
 
@@ -78,3 +78,10 @@ def delete_account(db: Session, user: User) -> None:
     db.query(UserPhoto).filter(UserPhoto.user_id == user.id).delete()
 
     db.commit()
+
+
+def update_settings(db: Session, user: User, data: UpdateSettingsRequest) -> User:
+    user.chat_push_enabled = data.chat_push_enabled
+    db.commit()
+    db.refresh(user)
+    return user

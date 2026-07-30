@@ -9,7 +9,13 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User, UserPhoto
-from app.schemas.users import FcmTokenRequest, UpdateProfileRequest, UserProfileResponse
+from app.schemas.users import (
+    FcmTokenRequest,
+    UpdateProfileRequest,
+    UpdateSettingsRequest,
+    UpdateSettingsResponse,
+    UserProfileResponse,
+)
 from app.services import users as users_service
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -27,6 +33,16 @@ def update_me(
     db: Session = Depends(get_db),
 ):
     return users_service.update_profile(db, current_user, body)
+
+
+@router.put("/me/settings", response_model=UpdateSettingsResponse)
+def update_settings(
+    body: UpdateSettingsRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """알림 등 유저 설정 갱신 (현재는 채팅 푸시 알림 수신 여부)"""
+    return users_service.update_settings(db, current_user, body)
 
 
 @router.post("/me/fcm-token")
