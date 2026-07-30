@@ -89,6 +89,7 @@ def send_message(
             token=opponent.fcm_token,
             sender_nickname=current_user.nickname or current_user.name,
             message=body.content,
+            room_id=str(room.id),
         )
 
     return {
