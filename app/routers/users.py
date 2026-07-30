@@ -74,6 +74,16 @@ def upload_photo(
     return {"s3_url": s3_url, "status": "analyzing"}
 
 
+@router.delete("/me", status_code=204)
+def delete_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """회원 탈퇴 (소프트 삭제)"""
+    users_service.delete_account(db, current_user)
+    return None
+
+
 @router.delete("/me/photos")
 def delete_photo(
     s3_url: str,
