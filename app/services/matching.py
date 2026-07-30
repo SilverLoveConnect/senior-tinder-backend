@@ -133,10 +133,14 @@ def like_user(db: Session, current_user: User, target_user_id: str) -> dict:
                 matched_user_nickname=current_user.nickname or current_user.name,
             )
 
-        return {"is_matched": True, "match_id": str(match.id)}
+        return {
+            "is_matched": True,
+            "match_id": str(match.id),
+            "chat_room_id": str(chat_room.id),
+        }
 
     db.commit()
-    return {"is_matched": False, "match_id": None}
+    return {"is_matched": False, "match_id": None, "chat_room_id": None}
 
 
 def get_matches(db: Session, current_user: User) -> dict:

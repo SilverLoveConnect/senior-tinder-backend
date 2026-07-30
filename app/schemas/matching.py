@@ -29,6 +29,7 @@ class MatchingListResponse(BaseModel):
 class LikeResponse(BaseModel):
     is_matched: bool
     match_id: str | None
+    chat_room_id: str | None = None
 
 
 class MatchUserInfo(BaseModel):
