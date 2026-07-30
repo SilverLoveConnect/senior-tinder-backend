@@ -37,6 +37,7 @@ class UserProfileResponse(BaseModel):
     name: str
     nickname: str
     age: int
+    gender: str | None = None
     region: str | None = None
     bio: str | None = None
     life_story: str | None = None

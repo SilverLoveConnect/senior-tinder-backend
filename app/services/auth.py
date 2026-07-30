@@ -181,6 +181,7 @@ def register_user(db: Session, data: RegisterRequest) -> User:
         age=data.age,
         gender=data.gender,
         region=data.region,
+        marketing_consent=data.marketing_consent,
     )
     db.add(user)
     db.flush()

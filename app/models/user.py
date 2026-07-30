@@ -54,6 +54,9 @@ class User(Base, TimestampMixin):
     chat_push_enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default=text("true"), nullable=False
     )
+    marketing_consent: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
 
     profile: Mapped["UserProfile"] = relationship(
         "UserProfile", back_populates="user", uselist=False, lazy="select"

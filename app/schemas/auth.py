@@ -38,6 +38,7 @@ class RegisterRequest(BaseModel):
     age: int = Field(ge=50, le=100)
     gender: GenderEnum
     region: str | None = None
+    marketing_consent: bool = False
 
 
 class RegisterResponse(BaseModel):
