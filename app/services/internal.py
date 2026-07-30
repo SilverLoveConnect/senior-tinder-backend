@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.user import UserPhoto
+from app.models.user import PhotoReviewStatusEnum, UserPhoto
 from app.models.manner import MannerFactorEnum
 from app.schemas.internal import AIPhotoResultRequest
 from app.services.fcm import notify_photo_approved
@@ -17,18 +17,29 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
     if not photo:
         raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
 
+    # 모델이 아직 미학습이라 자동 승인/거부 대신 사람 검수가 필요하다고
+    # 표시된 사진은 자동 승인하지 않고 검수 대기 상태로 둔다.
+    if data.needs_manual_review:
+        photo.is_approved = False
+        photo.review_status = PhotoReviewStatusEnum.pending
+        db.commit()
+        return {"message": "관리자 검수 대기", "photo_approved": False}
+
     if data.is_inappropriate:
         photo.is_approved = False
+        photo.review_status = PhotoReviewStatusEnum.rejected
         db.commit()
         return {"message": "부적절한 사진", "photo_approved": False}
 
     if not data.has_face:
         photo.is_approved = False
+        photo.review_status = PhotoReviewStatusEnum.rejected
         db.commit()
         return {"message": "얼굴 인식 실패", "photo_approved": False}
 
     if data.has_face:
         photo.is_approved = True
+        photo.review_status = PhotoReviewStatusEnum.approved
         update_trust_score(
             db=db,
             user=photo.user,
@@ -51,3 +62,14 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         notify_photo_approved(token=photo.user.fcm_token)
 
     return {"message": "처리 완료", "photo_approved": photo.is_approved}
+
+
+def get_pending_photos(db: Session) -> dict:
+    """관리자 검수가 필요한(review_status=pending) 사진 목록"""
+    photos = (
+        db.query(UserPhoto)
+        .filter(UserPhoto.review_status == PhotoReviewStatusEnum.pending)
+        .order_by(UserPhoto.created_at.asc())
+        .all()
+    )
+    return {"photos": photos}

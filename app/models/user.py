@@ -23,6 +23,12 @@ class GenderEnum(str, enum.Enum):
     female = "female"
 
 
+class PhotoReviewStatusEnum(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
 class MannerGradeEnum(str, enum.Enum):
     gold = "gold"
     silver = "silver"
@@ -153,5 +159,11 @@ class UserPhoto(Base, TimestampMixin):
     order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_approved: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    review_status: Mapped[PhotoReviewStatusEnum] = mapped_column(
+        SAEnum(PhotoReviewStatusEnum),
+        default=PhotoReviewStatusEnum.pending,
+        server_default=PhotoReviewStatusEnum.pending.value,
+        nullable=False,
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="photos", lazy="select")
