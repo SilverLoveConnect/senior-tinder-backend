@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import User
 from app.schemas.payment import (
+    PaymentHistoryResponse,
     PointChargeRequest,
     PointChargeResponse,
     SubscriptionRequest,
@@ -31,3 +32,19 @@ def subscribe(
     db: Session = Depends(get_db),
 ):
     return payment_service.subscribe(db, current_user, body)
+
+
+@router.delete("/subscriptions", response_model=SubscriptionResponse)
+def cancel_subscription(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return payment_service.cancel_subscription(db, current_user)
+
+
+@router.get("", response_model=PaymentHistoryResponse)
+def get_payment_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return payment_service.get_payment_history(db, current_user)

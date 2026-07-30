@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from app.models.user import User
-from app.schemas.users import UpdateProfileRequest
+from app.models.user import User, UserPhoto
+from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
 from app.services.manner import update_trust_score
 from app.models.manner import MannerFactorEnum
 
@@ -60,3 +60,28 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
     db.commit()
     db.refresh(user)
     return get_profile(user)
+
+
+def delete_account(db: Session, user: User) -> None:
+    """회원 탈퇴 — 소프트 삭제.
+
+    - is_active=False 처리 (재가입 시 같은 번호를 다시 쓸 수 있도록 phone은 익명화)
+    - name/nickname 익명화, fcm_token 제거
+    - 등록된 사진 전부 삭제
+    """
+    user.is_active = False
+    user.name = "탈퇴한 사용자"
+    user.nickname = "탈퇴한 사용자"
+    user.phone = f"deleted:{user.id}"
+    user.fcm_token = None
+
+    db.query(UserPhoto).filter(UserPhoto.user_id == user.id).delete()
+
+    db.commit()
+
+
+def update_settings(db: Session, user: User, data: UpdateSettingsRequest) -> User:
+    user.chat_push_enabled = data.chat_push_enabled
+    db.commit()
+    db.refresh(user)
+    return user

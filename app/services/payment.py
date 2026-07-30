@@ -170,3 +170,32 @@ def subscribe(db: Session, current_user: User, data: SubscriptionRequest) -> dic
 
     db.commit()
     return {"plan": subscription.plan, "expires_at": subscription.expires_at, "is_active": True}
+
+
+def cancel_subscription(db: Session, current_user: User) -> dict:
+    subscription = (
+        db.query(Subscription).filter(Subscription.user_id == current_user.id).first()
+    )
+    if not subscription or subscription.status != SubscriptionStatusEnum.active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="해지할 수 있는 구독이 없습니다.",
+        )
+
+    subscription.status = SubscriptionStatusEnum.cancelled
+    db.commit()
+    return {
+        "plan": subscription.plan,
+        "expires_at": subscription.expires_at,
+        "is_active": False,
+    }
+
+
+def get_payment_history(db: Session, current_user: User) -> dict:
+    payments = (
+        db.query(Payment)
+        .filter(Payment.user_id == current_user.id)
+        .order_by(Payment.created_at.desc())
+        .all()
+    )
+    return {"payments": payments}

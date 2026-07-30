@@ -41,13 +41,15 @@ def notify_new_match(token: str, matched_user_nickname: str) -> bool:
     )
 
 
-def notify_new_message(token: str, sender_nickname: str, message: str) -> bool:
+def notify_new_message(
+    token: str, sender_nickname: str, message: str, room_id: str
+) -> bool:
     """새로운 메시지 알림"""
     return send_push_notification(
         token=token,
         title=f"{sender_nickname}님의 메시지",
         body=message[:50],
-        data={"type": "message"},
+        data={"type": "message", "room_id": room_id},
     )
 
 

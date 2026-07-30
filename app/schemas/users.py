@@ -4,6 +4,20 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class FcmTokenRequest(BaseModel):
+    fcm_token: str
+
+
+class UpdateSettingsRequest(BaseModel):
+    chat_push_enabled: bool
+
+
+class UpdateSettingsResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    chat_push_enabled: bool
+
+
 class UpdateProfileRequest(BaseModel):
     name: str | None = Field(default=None, min_length=2, max_length=20)
     nickname: str | None = Field(default=None, min_length=2, max_length=20)
@@ -23,6 +37,7 @@ class UserProfileResponse(BaseModel):
     name: str
     nickname: str
     age: int
+    gender: str | None = None
     region: str | None = None
     bio: str | None = None
     life_story: str | None = None
