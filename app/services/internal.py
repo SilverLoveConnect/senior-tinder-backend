@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -73,3 +75,49 @@ def get_pending_photos(db: Session) -> dict:
         .all()
     )
     return {"photos": photos}
+
+
+def review_photo(db: Session, photo_id: uuid.UUID, approve: bool) -> dict:
+    """
+    검수 대기 사진에 대한 관리자 최종 판정.
+
+    pending 상태인 사진만 처리한다. 이 제약이 신뢰점수 중복 적용을 막는
+    실질적 가드다 — update_trust_score()는 멱등하지 않아서(호출할 때마다
+    MannerHistory 추가 + delta 누적) 같은 사진을 두 번 승인하면 +15가
+    두 번 붙는다. 자동 승인 경로(process_ai_photo_result)는 pending을
+    거치지 않고 바로 approved로 가므로 여기서 다시 잡히지 않는다.
+    """
+    photo = db.query(UserPhoto).filter(UserPhoto.id == photo_id).first()
+    if not photo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="사진을 찾을 수 없습니다."
+        )
+
+    if photo.review_status != PhotoReviewStatusEnum.pending:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"검수 대기 상태가 아닙니다. (현재: {photo.review_status.value})",
+        )
+
+    if not approve:
+        photo.is_approved = False
+        photo.review_status = PhotoReviewStatusEnum.rejected
+        db.commit()
+        return {"message": "검수 거부 처리 완료", "photo_approved": False}
+
+    photo.is_approved = True
+    photo.review_status = PhotoReviewStatusEnum.approved
+    # 자동 승인 경로(has_face)와 동일한 가점을 딱 한 번 부여한다.
+    update_trust_score(
+        db=db,
+        user=photo.user,
+        factor=MannerFactorEnum.image_analysis,
+        delta=15,
+        reason="관리자 검수를 통해 프로필 사진 승인",
+    )
+    db.commit()
+
+    if photo.user.fcm_token:
+        notify_photo_approved(token=photo.user.fcm_token)
+
+    return {"message": "검수 승인 처리 완료", "photo_approved": True}
