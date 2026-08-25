@@ -26,6 +26,15 @@ class AIPhotoResultResponse(BaseModel):
     photo_approved: bool
 
 
+class PhotoReviewRequest(BaseModel):
+    approve: bool
+
+
+class PhotoReviewResponse(BaseModel):
+    message: str
+    photo_approved: bool
+
+
 class PendingPhotoItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
