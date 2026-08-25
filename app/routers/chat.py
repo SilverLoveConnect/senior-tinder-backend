@@ -4,11 +4,12 @@ from uuid import UUID
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
-from app.models.matching import ChatMessage, ChatRoom, Match
+from app.models.matching import Block, ChatMessage, ChatRoom, Match
 from app.models.user import User
 from app.services.fcm import notify_new_message
 
@@ -34,6 +35,30 @@ def _get_room_or_403(db: Session, room_id: str, current_user: User) -> ChatRoom:
     match = db.query(Match).filter(Match.id == room.match_id).first()
     if not match or current_user.id not in (match.user1_id, match.user2_id):
         raise HTTPException(status_code=403, detail="접근 권한이 없습니다.")
+
+    # 차단 관계면 대화를 막는다. 참여자 검증만으로는 차단 후에도 메시지가
+    # 그대로 오가고 상대 폰에 푸시까지 가서, 앱이 안내한 차단 효과가 없다.
+    opponent_id = (
+        match.user2_id if match.user1_id == current_user.id else match.user1_id
+    )
+    blocked = (
+        db.query(Block)
+        .filter(
+            or_(
+                and_(
+                    Block.blocker_id == current_user.id,
+                    Block.blocked_id == opponent_id,
+                ),
+                and_(
+                    Block.blocker_id == opponent_id,
+                    Block.blocked_id == current_user.id,
+                ),
+            )
+        )
+        .first()
+    )
+    if blocked:
+        raise HTTPException(status_code=403, detail="차단된 상대와는 대화할 수 없습니다.")
 
     return room
 

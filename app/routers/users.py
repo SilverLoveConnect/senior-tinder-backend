@@ -1,3 +1,4 @@
+import io
 import os
 import uuid as uuid_lib
 
@@ -19,6 +20,29 @@ from app.schemas.users import (
 from app.services import users as users_service
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+# 업로드 제한 — 없으면 한 계정이 대용량 파일을 무제한으로 올려 S3 비용과
+# Modal 분석 호출이 그대로 늘어난다.
+MAX_PHOTOS_PER_USER = 6
+MAX_PHOTO_BYTES = 10 * 1024 * 1024  # 10MB
+
+# 파일 앞부분 시그니처(매직 바이트). Content-Type은 클라이언트가 보낸 값이라
+# 위조할 수 있어 단독으로는 신뢰할 수 없다.
+_IMAGE_SIGNATURES = (
+    b"\xff\xd8\xff",       # JPEG
+    b"\x89PNG\r\n\x1a\n",  # PNG
+)
+
+
+def _looks_like_image(head: bytes) -> bool:
+    if any(head.startswith(sig) for sig in _IMAGE_SIGNATURES):
+        return True
+    # RIFF....WEBP / ....ftypheic·heix·mif1 (HEIC) — 컨테이너는 앞 12바이트로 판별
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return True
+    if head[4:8] == b"ftyp" and head[8:12] in (b"heic", b"heix", b"mif1", b"msf1"):
+        return True
+    return False
 
 
 @router.get("/me", response_model=UserProfileResponse)
@@ -67,6 +91,25 @@ def upload_photo(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
+    photo_count = (
+        db.query(UserPhoto).filter(UserPhoto.user_id == current_user.id).count()
+    )
+    if photo_count >= MAX_PHOTOS_PER_USER:
+        raise HTTPException(
+            status_code=400,
+            detail=f"사진은 최대 {MAX_PHOTOS_PER_USER}장까지 등록할 수 있습니다.",
+        )
+
+    # 상한보다 1바이트 더 읽어서 초과 여부를 판단한다(초과분 전체를 메모리에 담지 않음).
+    content = file.file.read(MAX_PHOTO_BYTES + 1)
+    if len(content) > MAX_PHOTO_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"사진 용량은 {MAX_PHOTO_BYTES // (1024 * 1024)}MB를 넘을 수 없습니다.",
+        )
+    if not _looks_like_image(content[:12]):
+        raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
+
     # S3 업로드
     s3 = boto3.client(
         "s3",
@@ -77,7 +120,7 @@ def upload_photo(
     ext = os.path.splitext(file.filename or "")[1] or ".jpg"
     key = f"photos/{current_user.id}/{uuid_lib.uuid4()}{ext}"
     s3.upload_fileobj(
-        file.file,
+        io.BytesIO(content),
         settings.AWS_S3_BUCKET,
         key,
         ExtraArgs={"ContentType": file.content_type},

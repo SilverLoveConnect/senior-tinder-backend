@@ -9,6 +9,8 @@ from app.schemas.internal import (
     AIPhotoResultRequest,
     AIPhotoResultResponse,
     PendingPhotoListResponse,
+    UserBanRequest,
+    UserBanResponse,
     PhotoReviewRequest,
     PhotoReviewResponse,
 )
@@ -56,3 +58,21 @@ def review_photo(
     빠져나올 방법이 없다 — 목록 조회만 있고 처리 수단이 없었다.
     """
     return internal_service.review_photo(db, photo_id, body.approve)
+
+
+@router.post(
+    "/users/{user_id}/ban",
+    response_model=UserBanResponse,
+    dependencies=[Depends(verify_internal_token)],
+)
+def set_user_ban(
+    user_id: uuid.UUID,
+    body: UserBanRequest,
+    db: Session = Depends(get_db),
+) -> UserBanResponse:
+    """
+    계정 정지/해제 (관리자용).
+
+    신고 3회 자동 정지를 되돌릴 수단이 없어 오신고 시 복구가 불가능했다.
+    """
+    return internal_service.set_user_ban(db, user_id, body.banned)

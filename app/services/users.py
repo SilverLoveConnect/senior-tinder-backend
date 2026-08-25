@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.user import User, UserPhoto
 from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
-from app.services.manner import update_trust_score
+from app.services.manner import has_factor_history, update_trust_score
 from app.models.manner import MannerFactorEnum
 
 
@@ -49,7 +49,11 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
         photo_count = len(user.photos)
         bio_length = len(user.profile.bio or "")
 
-        if photo_count >= 3 or bio_length >= 100:
+        # 프로필 완성 가점은 계정당 한 번뿐이다. 가드가 없으면 저장 버튼을
+        # 누를 때마다 +10이 누적돼 신뢰점수를 무한히 올릴 수 있다.
+        if (photo_count >= 3 or bio_length >= 100) and not has_factor_history(
+            db, user, MannerFactorEnum.profile
+        ):
             update_trust_score(
                 db=db,
                 user=user,

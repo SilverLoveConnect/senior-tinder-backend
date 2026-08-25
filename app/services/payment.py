@@ -72,6 +72,24 @@ def _verify_portone_payment(imp_uid: str) -> dict:
     return payment_info
 
 
+def _verify_payment_owner(payment_info: dict, current_user: User) -> None:
+    """결제 건이 요청자 본인의 것인지 확인한다.
+
+    포트원 응답의 status·amount만 보면 "결제가 성사됐고 금액이 맞다"까지만
+    확인될 뿐, 그 결제가 누구 것인지는 알 수 없다. 타인의 imp_uid를 알아낸
+    사람이 자기 토큰으로 호출하면 포인트가 그쪽 계정에 적립된다.
+
+    규약: 클라이언트가 결제창을 띄울 때 merchant_uid를 "<user_id>:<uuid>"로
+    만든다. 결제 수단을 IAP로 전환하면 이 검증은 영수증 검증으로 대체된다.
+    """
+    merchant_uid = payment_info.get("merchant_uid") or ""
+    if not merchant_uid.startswith(f"{current_user.id}:"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="본인 결제 건이 아닙니다.",
+        )
+
+
 def _check_duplicate_payment(db: Session, imp_uid: str) -> None:
     if db.query(Payment).filter(Payment.imp_uid == imp_uid).first():
         raise HTTPException(
@@ -89,6 +107,7 @@ def charge_points(db: Session, current_user: User, data: PointChargeRequest) -> 
         )
 
     payment_info = _verify_portone_payment(data.imp_uid)
+    _verify_payment_owner(payment_info, current_user)
     if payment_info["amount"] != package["amount"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="결제금액 불일치"
@@ -133,6 +152,7 @@ def subscribe(db: Session, current_user: User, data: SubscriptionRequest) -> dic
         )
 
     payment_info = _verify_portone_payment(data.imp_uid)
+    _verify_payment_owner(payment_info, current_user)
     if payment_info["amount"] != plan_info["amount"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="결제금액 불일치"

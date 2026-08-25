@@ -33,7 +33,13 @@ def _is_review_phone(phone: str) -> bool:
     """심사관(App Store/Play Store) 검수용 전화번호인지 확인. 두 값이 모두 설정된 경우에만 활성화.
     .env의 REVIEW_TEST_PHONE에 하이픈 등 구분자가 섞여 있어도 안전하게 매칭되도록 숫자만 비교."""
     review_phone = settings.REVIEW_TEST_PHONE
-    return bool(review_phone) and _normalize_phone(phone) == _normalize_phone(review_phone)
+    review_code = settings.REVIEW_TEST_CODE
+    # 코드가 비어 있는데 이 분기를 타면 code=""인 인증 레코드가 만들어지고,
+    # 요청 스키마가 6자리를 강제하므로 어떤 입력과도 일치하지 않는다.
+    # 실제 SMS도 안 나가서 심사관이 로그인할 방법이 사라진다 — 둘 다 있을 때만 활성화.
+    if not review_phone or not review_code:
+        return False
+    return _normalize_phone(phone) == _normalize_phone(review_phone)
 
 
 def send_sms_code(db: Session, phone: str) -> None:
