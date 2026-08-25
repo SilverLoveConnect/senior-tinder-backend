@@ -46,3 +46,13 @@ class PendingPhotoItem(BaseModel):
 
 class PendingPhotoListResponse(BaseModel):
     photos: list[PendingPhotoItem]
+
+
+class UserBanRequest(BaseModel):
+    banned: bool
+
+
+class UserBanResponse(BaseModel):
+    user_id: uuid.UUID
+    is_banned: bool
+    message: str

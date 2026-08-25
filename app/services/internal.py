@@ -3,7 +3,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.user import PhotoReviewStatusEnum, UserPhoto
+from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
 from app.models.manner import MannerFactorEnum
 from app.schemas.internal import AIPhotoResultRequest
 from app.services.fcm import notify_photo_approved
@@ -39,24 +39,16 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         db.commit()
         return {"message": "얼굴 인식 실패", "photo_approved": False}
 
-    if data.has_face:
-        photo.is_approved = True
-        photo.review_status = PhotoReviewStatusEnum.approved
-        update_trust_score(
-            db=db,
-            user=photo.user,
-            factor=MannerFactorEnum.image_analysis,
-            delta=15,
-            reason="프로필 사진 등록 및 얼굴 인식 완료",
-        )
-    else:
-        update_trust_score(
-            db=db,
-            user=photo.user,
-            factor=MannerFactorEnum.image_analysis,
-            delta=5,
-            reason="프로필 사진 업로드 완료",
-        )
+    # 여기까지 왔으면 has_face는 항상 True다 (위에서 not has_face는 return).
+    photo.is_approved = True
+    photo.review_status = PhotoReviewStatusEnum.approved
+    update_trust_score(
+        db=db,
+        user=photo.user,
+        factor=MannerFactorEnum.image_analysis,
+        delta=15,
+        reason="프로필 사진 등록 및 얼굴 인식 완료",
+    )
 
     db.commit()
 
@@ -121,3 +113,26 @@ def review_photo(db: Session, photo_id: uuid.UUID, approve: bool) -> dict:
         notify_photo_approved(token=photo.user.fcm_token)
 
     return {"message": "검수 승인 처리 완료", "photo_approved": True}
+
+
+def set_user_ban(db: Session, user_id: uuid.UUID, banned: bool) -> dict:
+    """계정 정지/해제 (관리자용).
+
+    신고 3회 누적이면 create_report가 is_banned=True로 만드는데, 이를 되돌리는
+    경로가 어디에도 없어서 오신고 한 번이면 복구가 불가능했다. 이의 제기·오신고
+    대응을 위해 해제 수단이 반드시 있어야 한다.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="유저를 찾을 수 없습니다."
+        )
+
+    user.is_banned = banned
+    db.commit()
+
+    return {
+        "user_id": user.id,
+        "is_banned": user.is_banned,
+        "message": "계정을 정지했습니다." if banned else "계정 정지를 해제했습니다.",
+    }

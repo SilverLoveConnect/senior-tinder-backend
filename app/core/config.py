@@ -44,6 +44,12 @@ class Settings(BaseSettings):
     PORTONE_IMP_KEY: str = ""
     PORTONE_IMP_SECRET: str = ""
 
+    # 결제(포트원) 엔드포인트 활성화 여부.
+    # 프론트는 PAYMENTS_ENABLED=false로 진입점을 숨겼지만(Apple 3.1.1 회피)
+    # 서버 엔드포인트는 그대로 열려 있어 토큰만 있으면 직접 호출할 수 있었다.
+    # 디지털 재화는 IAP로 전환하기 전까지 서버에서도 닫아 둔다.
+    PAYMENTS_ENABLED: bool = False
+
     # Supabase
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
