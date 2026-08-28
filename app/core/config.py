@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = ""
     AI_API_URL: str = ""
     AI_IMAGE_API_URL: str = ""
+    # AI 서버 인증 키. AI 서버의 AI_API_KEY와 같은 값이어야 한다.
+    # 비워두면 헤더를 보내지 않는다(무인증 AI 서버 호환).
+    AI_API_KEY: str = ""
     # 포트원 V1
     PORTONE_IMP_KEY: str = ""
     PORTONE_IMP_SECRET: str = ""

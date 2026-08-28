@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
 from app.models.matching import Block, ChatMessage, ChatRoom, Match
 from app.models.user import User
+from app.services.ai import ai_headers
 from app.services.fcm import notify_new_message
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -86,6 +87,7 @@ def send_message(
                 "content": body.content,
                 "room_id": room_id,
             },
+            headers=ai_headers(),
             timeout=2,
         )
         if res.status_code == 200:

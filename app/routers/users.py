@@ -18,6 +18,7 @@ from app.schemas.users import (
     UserProfileResponse,
 )
 from app.services import users as users_service
+from app.services.ai import ai_headers
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -137,6 +138,7 @@ def upload_photo(
         httpx.post(
             settings.AI_IMAGE_API_URL,
             json={"s3_url": s3_url, "user_id": str(current_user.id)},
+            headers=ai_headers(),
             timeout=3,
         )
     except Exception:
