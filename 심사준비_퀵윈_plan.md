@@ -7,9 +7,9 @@
 
 | 항목 | 종류 | 파일 | 코드 리스크 | 상태 |
 |---|---|---|---|---|
-| A. 계정 삭제 안내 페이지 | 신규 문서 | `docs/legal/account-deletion.html` | 없음 (기존 코드 미접촉) | 승인 대기 |
-| B. 약관 무관용·24시간 문구 | 문서 수정 | `docs/legal/terms.html` | 없음 | 승인 대기 |
-| C. `INTERNAL_TOKEN` 미설정 통과 제거 | 설정/보안 | `app/core/config.py`, `app/core/dependencies.py`, `.env.example` | 낮음 (단, **팀원 로컬 기동에 영향**) | 승인 + 방식 선택 대기 |
+| A. 계정 삭제 안내 페이지 | 신규 문서 | `docs/legal/account-deletion.html` | 없음 (기존 코드 미접촉) | ✅ 적용 완료 (2026-09-03) |
+| B. 약관 무관용·24시간 문구 | 문서 수정 | `docs/legal/terms.html` | 없음 | ✅ 적용 완료 (2026-09-03) — 제7조 4·5항 추가 |
+| C. `INTERNAL_TOKEN` 미설정 통과 제거 | 설정/보안 | `app/core/config.py`, `app/core/dependencies.py`, `.env.example` | 낮음 (단, **팀원 로컬 기동에 영향**) | ⏸ 보류 — Railway 현재 설정 + AI 서버 헤더 사용 여부 확인 후 진행 |
 | D. 시드 더미 사진 | 코드+정책 | `scripts/seed.py` | 중 | **오늘 보류** (§4 사유) |
 
 ---
