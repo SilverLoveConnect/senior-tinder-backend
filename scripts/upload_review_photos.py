@@ -4,7 +4,7 @@
 
 키 규칙
 -------
-    photos/review-demo/{index}.png
+    photos/review-demo/{index}.{jpg|png}
 
 `/review-demo/` 마커가 롤백의 식별자다. 실제 가입자 사진은
 `photos/{user_id}/{uuid}.ext`(users.py 참조)이라 절대 겹치지 않는다.
@@ -70,10 +70,23 @@ def check_env() -> bool:
 
 
 def local_files() -> list[Path]:
+    """업로드할 이미지. 같은 이름의 .jpg가 있으면 그쪽을 쓴다.
+
+    생성 원본은 1024px PNG로 장당 ~1.5MB인데, 프로필 카드 한 장에 그만한
+    용량을 쓰면 느린 회선에서 카드가 늦게 뜬다(50대 타겟에겐 특히 체감된다).
+    같은 폴더에 1080px JPEG(q86)를 만들어 두면 장당 ~136KB로 떨어진다.
+    PNG는 마스터로 남겨둔다.
+    """
     if not ASSET_DIR.exists():
         print(f"❌ 이미지 폴더가 없습니다: {ASSET_DIR}")
         return []
-    return sorted(p for p in ASSET_DIR.glob("*.png") if not p.name.startswith("_"))
+    by_stem: dict[str, Path] = {}
+    for p in sorted(ASSET_DIR.glob("*.png")) + sorted(ASSET_DIR.glob("*.jpg")):
+        if p.name.startswith("_"):
+            continue
+        # jpg가 뒤에 오므로 같은 stem이면 자연히 jpg가 이긴다
+        by_stem[p.stem] = p
+    return [by_stem[k] for k in sorted(by_stem)]
 
 
 def head_ok(url: str) -> str:
@@ -97,7 +110,7 @@ def do_upload(apply: bool) -> int:
 
     for path in files:
         index = path.stem                      # "0001"
-        key = f"{KEY_PREFIX}{index}.png"
+        key = f"{KEY_PREFIX}{index}{path.suffix}"
         url = public_url(key)
         urls[index] = url
         size_kb = path.stat().st_size // 1024
@@ -106,9 +119,9 @@ def do_upload(apply: bool) -> int:
             with open(path, "rb") as f:
                 client.upload_fileobj(f, settings.AWS_S3_BUCKET, key,
                                       ExtraArgs={"ContentType": ctype})
-            print(f"  ↑ {index}.png ({size_kb}KB)  공개확인={head_ok(url)}")
+            print(f"  ↑ {path.name} ({size_kb}KB)  공개확인={head_ok(url)}")
         else:
-            print(f"  · {index}.png ({size_kb}KB) → {key}")
+            print(f"  · {path.name} ({size_kb}KB) → {key}")
 
     if not apply:
         print("\n🔎 dry-run — 아무것도 올리지 않았습니다. 실제 업로드는 --apply")
