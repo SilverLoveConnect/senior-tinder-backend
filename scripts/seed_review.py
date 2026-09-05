@@ -46,6 +46,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -162,8 +163,20 @@ def demo_users(db):
 
 
 def review_phone() -> str | None:
-    raw = os.getenv("REVIEW_TEST_PHONE", "").strip()
-    return raw or None
+    """심사 계정 전화번호를 **숫자만** 남긴 형태로 돌려준다.
+
+    프론트는 `stripPhone()`으로 하이픈을 떼고 `01012345678` 형태를 보내고,
+    `login_user()`는 `User.phone == phone`으로 그대로 조회한다. 반면
+    `_is_review_phone()`은 양쪽을 정규화해 비교하므로 환경변수에 하이픈이
+    섞여 있어도 SMS 분기는 통과한다.
+
+    즉 env를 '010-1234-5678'로 넣으면 인증코드는 받는데 **로그인만 실패하는**
+    함정이 생긴다(User.phone에 하이픈이 박혀 조회가 안 됨). 여기서 미리
+    정규화해 그 조합을 원천 차단한다.
+    """
+    raw = os.getenv("REVIEW_TEST_PHONE", "")
+    digits = re.sub(r"\D", "", raw)
+    return digits or None
 
 
 def get_review_user(db):
