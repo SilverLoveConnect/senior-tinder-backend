@@ -48,3 +48,7 @@ class UserProfileResponse(BaseModel):
     trust_grade: str = "normal"
     is_verified: bool = False
     photos: list[str] = []
+    # 승인 대기·거부된 사진. 이 값이 없으면 사용자는 자기가 올린 사진이
+    # 왜 프로필에 안 뜨는지 알 수 없고, 지울 수도 없다(업로드 한도만 찬다).
+    pending_photos: list[str] = []
+    rejected_photos: list[str] = []
