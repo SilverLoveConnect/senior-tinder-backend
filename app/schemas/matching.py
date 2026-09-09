@@ -40,6 +40,7 @@ class MatchUserInfo(BaseModel):
     age: int
     region: str | None
     trust_grade: str
+    photo: str | None = None
 
 
 class MatchResponse(BaseModel):

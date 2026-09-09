@@ -281,6 +281,11 @@ def get_matches(db: Session, current_user: User) -> dict:
                     "trust_grade": (
                         opponent.profile.trust_grade if opponent.profile else "normal"
                     ),
+                    # 대화 목록·채팅방에 상대 얼굴을 띄우려면 사진이 필요하다.
+                    # 없어서 앱이 전원 기본 아이콘(👤)으로 그리고 있었다.
+                    "photo": next(
+                        (p.s3_url for p in opponent.photos if p.is_approved), None
+                    ),
                 },
                 "matched_at": match.matched_at,
                 "chat_room_id": chat_room_id,
