@@ -73,6 +73,11 @@ def send_message(
     """메시지 전송 — AI 스캠 감지 후 DB 저장"""
     room = _get_room_or_403(db, room_id, current_user)
 
+    # 한쪽이 나간 대화에는 더 이상 쓸 수 없다. 막지 않으면 목록에서 사라진
+    # 상대에게 메시지와 푸시가 계속 가고, 받는 쪽은 답할 방법이 없다.
+    if not room.is_active:
+        raise HTTPException(status_code=400, detail="종료된 대화입니다.")
+
     # AI 서버 스캠 감지 (실패해도 메시지 전송 허용)
     is_scam = False
     scam_type = None
@@ -126,6 +131,31 @@ def send_message(
         "is_read": msg.is_read,
         "created_at": str(msg.created_at),
     }
+
+
+@router.post("/rooms/{room_id}/leave")
+def leave_room(
+    room_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """채팅방 나가기.
+
+    방은 매칭 1건에 1개(1:1)라서 한쪽만 남기고 유지할 수가 없다. 상대만 계속
+    쓸 수 있게 두면 답이 오지 않는 방에 계속 말을 걸게 되므로, 방 자체를
+    비활성으로 내려 양쪽 목록에서 사라지게 한다. 앱도 "상대방도 이 대화를 볼
+    수 없어요"라고 미리 알린다.
+
+    매칭 기록(Like·Match)은 남긴다. 지우면 상대가 다시 추천 카드로 떠서
+    나간 대화를 또 시작하게 된다.
+    """
+    room = _get_room_or_403(db, room_id, current_user)
+
+    if room.is_active:
+        room.is_active = False
+        db.commit()
+
+    return {"left": True}
 
 
 @router.get("/rooms/{room_id}/messages")

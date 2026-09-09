@@ -220,6 +220,9 @@ def get_matches(db: Session, current_user: User) -> dict:
         .all()
     )
 
+    # 나간 대화는 목록에 남지 않는다 (chat.leave_room이 is_active를 내린다)
+    matches = [m for m in matches if m.chat_room is None or m.chat_room.is_active]
+
     if not matches:
         return {"matches": []}
 
