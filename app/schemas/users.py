@@ -9,13 +9,16 @@ class FcmTokenRequest(BaseModel):
 
 
 class UpdateSettingsRequest(BaseModel):
-    chat_push_enabled: bool
+    # bool → bool | None은 완화라 기존 앱 요청이 그대로 통과한다
+    chat_push_enabled: bool | None = None
+    marketing_consent: bool | None = None
 
 
 class UpdateSettingsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     chat_push_enabled: bool
+    marketing_consent: bool
 
 
 class UpdateProfileRequest(BaseModel):

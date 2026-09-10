@@ -33,8 +33,15 @@ def verify_sms(body: SmsVerifyRequest, db: Session = Depends(get_db)):
 
 @router.post("/register", response_model=RegisterResponse)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
-    user = auth_service.register_user(db, body)
-    return user
+    result = auth_service.register_user(db, body)
+    user = result["user"]
+    return RegisterResponse(
+        id=user.id,
+        phone=user.phone,
+        name=user.name,
+        access_token=result["access_token"],
+        refresh_token=result["refresh_token"],
+    )
 
 
 @router.post("/login", response_model=TokenResponse)

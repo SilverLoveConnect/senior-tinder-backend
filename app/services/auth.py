@@ -9,6 +9,7 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.auth import SmsSendLog, SmsVerification
+from app.models.point import Point
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
 
@@ -144,34 +145,50 @@ def verify_sms_code(db: Session, phone: str, code: str) -> bool:
 def _ensure_sms_verified_for_register(db: Session, phone: str, code: str) -> None:
     """register 직전 SMS 인증 여부를 확인한다.
 
-    프론트는 /auth/verify(인증 확인 화면)에서 이미 verify_sms_code를 호출해
-    SmsVerification.is_used=True로 코드를 소비한다. 여기서 verify_sms_code를
-    그대로 다시 호출하면 "이미 사용됨" 처리로 항상 실패하므로, 대신 phone+code가
-    일치하고 최근 REGISTER_SMS_VERIFY_WINDOW 이내에 is_used=True로 소비된
-    인증 기록이 존재하는지만 확인한다.
+    이전 구현은 is_used=True인 기록만 인정했다. "프론트가 /auth/sms/verify로
+    코드를 이미 소비했다"는 전제였는데, 앱은 그 API를 호출하지 않는다. 앱은
+    login을 먼저 부르고, login은 신규 유저면 코드를 소비하지 않은 채 400을
+    돌려준다(#31에서 의도적으로 그렇게 바꿨다). 그래서 소비된 기록이 존재할 수
+    없었고 신규 가입이 항상 400 "SMS 인증을 먼저 완료해주세요."로 막혔다.
+    실제로 이 커밋(2026-07-30) 이후 register로 가입에 성공한 계정이 하나도 없다.
+
+    → 소비 여부를 묻지 않고 phone+code 일치와 유효 시간만 본다.
+
+    코드를 여기서 소비(is_used=True)하지는 않는다. 구버전 앱은 register 직후
+    같은 코드로 login을 부르는데, 여기서 소비해 버리면 그 login이 실패한다.
+    스토어에 이미 나가 있는 빌드도 이 배포만으로 살아나야 한다.
     """
     verification = (
         db.query(SmsVerification)
-        .filter(
-            SmsVerification.phone == phone,
-            SmsVerification.code == code,
-            SmsVerification.is_used == True,
-        )
+        .filter(SmsVerification.phone == phone)
         .order_by(SmsVerification.created_at.desc())
         .first()
     )
-    if (
-        not verification
-        or verification.created_at
-        < datetime.now(timezone.utc) - REGISTER_SMS_VERIFY_WINDOW
-    ):
+    if verification is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="SMS 인증을 먼저 완료해주세요.",
+        )
+
+    expired = verification.created_at < datetime.now(
+        timezone.utc
+    ) - REGISTER_SMS_VERIFY_WINDOW
+
+    if verification.code != code or expired:
+        # 시도 횟수를 세지 않으면 15분 창 안에서 6자리를 전수조사해 타인 번호로
+        # 계정을 만들 수 있다. verify_sms_code와 같은 한도를 적용한다.
+        verification.attempt_count += 1
+        if verification.attempt_count >= MAX_VERIFY_ATTEMPTS:
+            verification.is_used = True
+        db.commit()
+        # 실패 사유를 구분해 주면 공격자에게 진행 상황을 알려주게 된다 — 동일 문구.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="SMS 인증을 먼저 완료해주세요.",
         )
 
 
-def register_user(db: Session, data: RegisterRequest) -> User:
+def register_user(db: Session, data: RegisterRequest) -> dict:
     user = db.query(User).filter(User.phone == data.phone).first()
     if user:
         raise HTTPException(
@@ -194,9 +211,19 @@ def register_user(db: Session, data: RegisterRequest) -> User:
 
     profile = UserProfile(user_id=user.id)
     db.add(profile)
+    # 포인트 레코드가 없으면 POST /points/use가 항상 "포인트가 부족합니다"로
+    # 실패한다(조회는 balance or 0으로 방어돼 있어 정상처럼 보인다).
+    db.add(Point(user_id=user.id, balance=0))
     db.commit()
     db.refresh(user)
-    return user
+
+    # 가입 직후 로그인 화면으로 되돌리지 않기 위해 토큰을 함께 준다.
+    # 방금 SMS 인증을 마친 사용자라 신뢰 근거는 이미 충분하다.
+    return {
+        "user": user,
+        "access_token": create_access_token(subject=str(user.id)),
+        "refresh_token": create_refresh_token(subject=str(user.id)),
+    }
 
 
 def login_user(db: Session, phone: str, code: str) -> dict:
@@ -236,7 +263,7 @@ def refresh_access_token(db: Session, refresh_token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="refresh token이 아닙니다."
         )
     user = db.query(User).filter(User.id == subject).first()
-    if not user:
+    if not user or not user.is_active or user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="등록된 회원이 아닙니다."
         )
