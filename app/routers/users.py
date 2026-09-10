@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
-from app.models.user import User, UserPhoto
+from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
 from app.schemas.users import (
     FcmTokenRequest,
     UpdateProfileRequest,
@@ -91,8 +91,18 @@ def upload_photo(
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="이미지 파일만 업로드 가능합니다.")
 
+    # 거부된 사진은 한도에서 제외한다.
+    # /users/me는 승인된 사진만 내려주므로(users.py: services) 사용자는 거부된
+    # 사진을 화면에서 볼 수도, 지울 수도 없다. 그런데 한도를 전체 행으로 세면
+    # 얼굴이 안 나온 사진을 6장 올린 사용자는 프로필 사진 0장인 채로 업로드가
+    # 영구히 막힌다(실제로 심사용 계정이 그 상태가 됐다).
     photo_count = (
-        db.query(UserPhoto).filter(UserPhoto.user_id == current_user.id).count()
+        db.query(UserPhoto)
+        .filter(
+            UserPhoto.user_id == current_user.id,
+            UserPhoto.review_status != PhotoReviewStatusEnum.rejected,
+        )
+        .count()
     )
     if photo_count >= MAX_PHOTOS_PER_USER:
         raise HTTPException(

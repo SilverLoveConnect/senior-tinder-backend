@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from app.models.user import User, UserPhoto
+from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
 from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
 from app.services.manner import has_factor_history, update_trust_score
 from app.models.manner import MannerFactorEnum
@@ -23,6 +23,16 @@ def get_profile(user: User) -> dict:
         "trust_grade": user.profile.trust_grade if user.profile else "normal",
         "is_verified": user.profile.is_verified if user.profile else False,
         "photos": [p.s3_url for p in user.photos if p.is_approved],
+        "pending_photos": [
+            p.s3_url
+            for p in user.photos
+            if not p.is_approved and p.review_status == PhotoReviewStatusEnum.pending
+        ],
+        "rejected_photos": [
+            p.s3_url
+            for p in user.photos
+            if p.review_status == PhotoReviewStatusEnum.rejected
+        ],
     }
 
 
