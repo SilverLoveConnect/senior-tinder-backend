@@ -47,6 +47,11 @@ class RegisterResponse(BaseModel):
     id: uuid.UUID
     phone: str
     name: str
+    # 가입 직후 바로 로그인 상태로 들어가기 위한 토큰. 필드 추가라 구버전 앱은
+    # 무시하고 기존 동작(register 후 login 재호출)을 그대로 탄다.
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 
 class LoginRequest(BaseModel):

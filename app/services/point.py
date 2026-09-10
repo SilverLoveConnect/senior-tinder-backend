@@ -22,7 +22,15 @@ def get_history(db: Session, current_user: User) -> dict:
 
 
 def use_points(db: Session, current_user: User, data: PointUseRequest) -> dict:
-    point = db.query(Point).filter(Point.user_id == current_user.id).first()
+    # with_for_update = SELECT ... FOR UPDATE. 잠금이 없으면 동시 요청이 같은
+    # 잔액을 읽고 각자 차감해 100P로 200P를 쓸 수 있다(동시성 테스트에서 재현).
+    # 지금은 충전 경로가 없어 실피해가 없지만 결제를 켜는 순간 금전 손실이 된다.
+    point = (
+        db.query(Point)
+        .filter(Point.user_id == current_user.id)
+        .with_for_update()
+        .first()
+    )
     if not point or point.balance < data.amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="포인트가 부족합니다."

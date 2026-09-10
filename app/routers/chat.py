@@ -173,6 +173,15 @@ def get_messages(
         .order_by(ChatMessage.created_at.asc())
         .all()
     )
+
+    # is_read를 True로 바꾸는 코드가 저장소 어디에도 없어 안읽음 배지가 영구히
+    # 남았다. 앱은 채팅방에 들어올 때 항상 이력을 부르므로 조회를 읽음으로 본다.
+    db.query(ChatMessage).filter(
+        ChatMessage.room_id == room.id,
+        ChatMessage.sender_id != current_user.id,
+        ChatMessage.is_read == False,
+    ).update({"is_read": True}, synchronize_session=False)
+    db.commit()
     return [
         {
             "id": str(m.id),

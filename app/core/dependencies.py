@@ -2,6 +2,8 @@
 from collections.abc import Generator
 from typing import Any
 
+import secrets
+
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
@@ -76,9 +78,15 @@ def get_current_user(
 def verify_internal_token(x_internal_token: str = Header(default="")):
     """AI 서버 등 내부 서비스 콜백 인증"""
     if not settings.INTERNAL_TOKEN:
-        # 환경변수 미설정 시 개발 환경으로 간주, 통과
-        return
-    if x_internal_token != settings.INTERNAL_TOKEN:
+        # 미설정 시 통과시키면(fail-open) 배포 환경변수를 한 번 빠뜨리는 것만으로
+        # 전 사용자 사진 URL 조회와 임의 계정 정지가 인터넷에 열린다.
+        # 설정을 잊었을 때 기능이 죽는 쪽이, 조용히 열리는 쪽보다 안전하다.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="내부 서비스 인증이 구성되지 않았습니다.",
+        )
+    # 단순 != 비교는 앞자리가 다른 시점에 반환돼 타이밍 공격에 정보를 흘린다.
+    if not secrets.compare_digest(x_internal_token, settings.INTERNAL_TOKEN):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="내부 서비스 인증 실패",

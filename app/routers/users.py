@@ -18,6 +18,7 @@ from app.schemas.users import (
     UserProfileResponse,
 )
 from app.services import users as users_service
+from app.services.s3 import delete_photo_objects
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -76,6 +77,12 @@ def update_fcm_token(
     db: Session = Depends(get_db),
 ):
     """푸시 알림용 FCM 토큰 등록/갱신"""
+    # 같은 기기에서 A가 로그아웃하고 B가 로그인하면 두 계정이 같은 토큰을 갖는다.
+    # 회수하지 않으면 A에게 오는 매칭·메시지 알림이 B의 기기로 발송된다 —
+    # 알림 본문에 메시지 앞 50자가 실리므로 대화 내용이 제3자에게 노출된다.
+    db.query(User).filter(
+        User.fcm_token == body.fcm_token, User.id != current_user.id
+    ).update({"fcm_token": None}, synchronize_session=False)
     current_user.fcm_token = body.fcm_token
     db.commit()
     return {"message": "저장 완료"}
@@ -180,4 +187,6 @@ def delete_photo(
         raise HTTPException(status_code=404, detail="사진을 찾을 수 없습니다.")
     db.delete(photo)
     db.commit()
+    # DB 행만 지우면 S3 원본이 남아 URL을 아는 사람은 계속 볼 수 있다.
+    delete_photo_objects([s3_url])
     return {"message": "삭제 완료"}
