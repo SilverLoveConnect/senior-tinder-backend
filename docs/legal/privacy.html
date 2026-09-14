@@ -27,7 +27,7 @@
 <p class="meta"><strong>대표자:</strong> 한지수</p>
 <p class="meta"><strong>사업자등록번호:</strong> 513-64-26736</p>
 <p class="meta"><strong>사업장 소재지:</strong> 경기도 부천시 소사구 양지남로23번길 8, 202호(범박동)</p>
-<p class="meta"><strong>시행일:</strong> 2026-09-07</p>
+<p class="meta"><strong>시행일:</strong> 2026-09-21</p>
 
 <p>회사는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하게
 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.</p>
@@ -148,6 +148,7 @@
   <tr><td>솔라피(SOLAPI)</td><td>본인확인 문자(SMS) 발송</td><td>대한민국</td></tr>
   <tr><td>Railway Corporation</td><td>서버 및 데이터베이스 호스팅</td><td>미국</td></tr>
   <tr><td>Modal Labs, Inc.</td><td>프로필 사진의 AI 검수 연산</td><td>미국</td></tr>
+  <tr><td>Google LLC</td><td>프로필 사진의 부적절 콘텐츠(선정성·폭력성) 판별(Cloud Vision)</td><td>미국</td></tr>
   <tr><td>OpenAI, L.L.C.</td><td>자기소개 문구 자동 생성</td><td>미국</td></tr>
   <tr><td>Google LLC</td><td>푸시 알림 발송(Firebase Cloud Messaging)</td><td>미국</td></tr>
   <tr><td>Functional Software, Inc. (Sentry)</td><td>서비스 오류·장애 로그의 수집 및 분석</td><td>미국</td></tr>
@@ -181,6 +182,14 @@
     <td>프로필 사진</td>
     <td>얼굴 포함 여부 및 부적절 콘텐츠 여부의 자동 검수</td>
     <td>검수 완료 즉시 파기<br>(수탁자는 별도로 보관하지 않음)</td>
+  </tr>
+  <tr>
+    <td>Google LLC<br><a href="https://cloud.google.com/terms/cloud-privacy-notice">cloud.google.com/terms/cloud-privacy-notice</a></td>
+    <td>미국</td>
+    <td>이용자가 프로필 사진을 등록하는 시점에<br>네트워크를 통한 전송(Modal Labs를 거쳐 전달)</td>
+    <td>프로필 사진</td>
+    <td>선정적·폭력적 콘텐츠 포함 여부의 판별</td>
+    <td>판별 완료 즉시 파기<br>(Google은 이미지를 메모리에서만 처리하고 저장하지 않으며, 모델 개선에 이용하지 않음)</td>
   </tr>
   <tr>
     <td>OpenAI, L.L.C.<br><a href="https://openai.com/policies/privacy-policy">openai.com/policies/privacy-policy</a></td>
@@ -224,8 +233,8 @@
 <h3>1. 프로필 사진의 자동 검수</h3>
 <ul>
   <li><strong>결정의 내용:</strong> 등록한 프로필 사진의 게시 승인 또는 거부</li>
-  <li><strong>처리 방식:</strong> 사진에서 얼굴이 검출되는지, 선정적·폭력적 요소가 포함되어 있는지를
-      기계학습 모델이 판정합니다. 판정 결과는 승인·거부·보류의 세 가지입니다.</li>
+  <li><strong>처리 방식:</strong> 사진에서 얼굴이 검출되는지는 회사가 위탁한 검수 서버(Modal Labs)의 기계학습 모델이,
+      선정적·폭력적 요소가 포함되어 있는지는 Google Cloud Vision이 판정합니다. 판정 결과는 승인·거부·보류의 세 가지입니다.</li>
   <li><strong>기준:</strong> 얼굴이 검출되지 않거나 부적절 요소가 확인된 경우 게시가 거부되며,
       모델이 판단하기 어려운 경우에는 사람이 직접 확인합니다.</li>
   <li><strong>효과:</strong> 거부된 사진은 다른 회원에게 노출되지 않습니다. 계정 자체가 정지되지는 않습니다.</li>
@@ -362,8 +371,9 @@
   <li>2026-07-30 최초 제정</li>
   <li>2026-09-07 개정 — 국외 이전 사항의 구체화, 자동화된 결정에 관한 사항 신설,
       자동 수집 장치 및 앱 접근권한 안내 신설, 항목별 보유 기간 명시, 수탁자 현행화</li>
+  <li>2026-09-21 개정 — 프로필 사진의 부적절 콘텐츠 판별 수탁자(Google LLC, Cloud Vision) 추가 및 국외 이전 사항 반영, 사진 자동 검수의 처리 방식 구체화</li>
 </ul>
 
-<p class="meta" style="margin-top:40px"><strong>시행일자:</strong> 2026-09-07</p>
+<p class="meta" style="margin-top:40px"><strong>시행일자:</strong> 2026-09-21</p>
 </body>
 </html>
