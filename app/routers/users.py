@@ -7,6 +7,7 @@ import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.ai import ai_headers
 from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
 from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
@@ -17,6 +18,7 @@ from app.schemas.users import (
     UpdateSettingsResponse,
     UserProfileResponse,
 )
+from app.schemas.users import BioSuggestionRequest, TagNormalizeRequest
 from app.services import users as users_service
 from app.services.s3 import delete_photo_objects
 
@@ -154,6 +156,7 @@ def upload_photo(
         httpx.post(
             settings.AI_IMAGE_API_URL,
             json={"s3_url": s3_url, "user_id": str(current_user.id)},
+            headers=ai_headers(),
             timeout=3,
         )
     except Exception:
@@ -190,3 +193,47 @@ def delete_photo(
     # DB 행만 지우면 S3 원본이 남아 URL을 아는 사람은 계속 볼 수 있다.
     delete_photo_objects([s3_url])
     return {"message": "삭제 완료"}
+
+
+def _call_ai(path: str, payload: dict, timeout: float) -> dict:
+    if not settings.AI_API_URL:
+        raise HTTPException(status_code=503, detail="AI 추천을 지금 사용할 수 없어요.")
+    try:
+        res = httpx.post(f"{settings.AI_API_URL}{path}", json=payload, headers=ai_headers(), timeout=timeout)
+    except httpx.HTTPError:
+        raise HTTPException(status_code=502, detail="AI 서버에 연결하지 못했어요. 잠시 후 다시 시도해주세요.")
+    if res.status_code != 200:
+        raise HTTPException(status_code=502, detail="AI 서버가 응답하지 않아요. 잠시 후 다시 시도해주세요.")
+    return res.json()
+
+
+@router.post("/me/bio-suggestions")
+def bio_suggestions(
+    body: BioSuggestionRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """AI 자기소개 추천 (AI 서버 경유).
+
+    앱이 AI 서버를 직접 부르면 AI 서버에 인증 키를 걸 수 없다(키를 앱 번들에 넣어야
+    한다). 그 사이 AI 서버가 무인증으로 열려 있어 누구나 OpenAI 요금을 발생시킬 수
+    있었다. 로그인한 사용자만, 백엔드가 키를 붙여 대신 호출한다.
+    """
+    return _call_ai(
+        "/api/v1/nlp/profile",
+        {
+            "keywords": body.keywords,
+            "age": current_user.age,
+            "gender": getattr(current_user.gender, "value", current_user.gender),
+            "region": current_user.region,
+        },
+        timeout=30,
+    )
+
+
+@router.post("/me/tags/normalize")
+def normalize_tags(
+    body: TagNormalizeRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """관심사 태그 정규화 (AI 서버 경유) — 산행·트레킹 → 등산."""
+    return _call_ai("/api/v1/nlp/tags/normalize", {"tags": body.tags}, timeout=10)

@@ -2,6 +2,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.models.matching import ChatRoom, Match
 from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
+from app.services.content_filter import check_profile_text
 from app.services.s3 import delete_photo_objects
 from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
 from app.services.manner import has_factor_history, update_trust_score
@@ -40,6 +41,12 @@ def get_profile(user: User) -> dict:
 
 
 def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
+    # 다른 회원에게 노출되는 글은 저장 전에 금칙 검사 (Apple 1.2 · Play 사용자 제작 콘텐츠)
+    check_profile_text("닉네임", data.nickname)
+    check_profile_text("자기소개", data.bio)
+    check_profile_text("인생 이야기", data.life_story)
+    check_profile_text("직업", data.job)
+
     if data.name is not None:
         user.name = data.name
     if data.nickname is not None:

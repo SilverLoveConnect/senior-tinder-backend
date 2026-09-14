@@ -4,6 +4,7 @@ import json
 import logging
 
 import firebase_admin
+import httpx
 from firebase_admin import credentials, messaging
 
 from app.core.config import settings
@@ -29,8 +30,47 @@ if not firebase_admin._apps:
         )
 
 
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+
+def _is_expo_token(token: str) -> bool:
+    return token.startswith(("ExponentPushToken[", "ExpoPushToken["))
+
+
+def _send_expo(token: str, title: str, body: str, data: dict | None) -> bool:
+    """Expo Push API로 발송 — Expo가 iOS(APNs)·Android(FCM)로 전달한다."""
+    try:
+        res = httpx.post(
+            EXPO_PUSH_URL,
+            json={"to": token, "title": title, "body": body, "data": data or {},
+                  "sound": "default", "channelId": "default", "priority": "high"},
+            headers={"Accept": "application/json"},
+            timeout=10,
+        )
+        ticket = res.json().get("data")
+        if isinstance(ticket, list):
+            ticket = ticket[0] if ticket else {}
+        if res.status_code == 200 and (ticket or {}).get("status") == "ok":
+            return True
+        logger.warning("Expo 푸시 발송 실패: http=%s ticket=%s", res.status_code, ticket)
+        return False
+    except Exception:
+        logger.exception("Expo 푸시 발송 실패")
+        return False
+
+
 def send_push_notification(token: str, title: str, body: str, data: dict = None) -> bool:
-    """단일 기기에 푸시 알림 발송"""
+    """단일 기기에 푸시 알림 발송.
+
+    앱은 Expo 푸시 토큰을 등록한다. 이전 앱은 네이티브 토큰(iOS에서는 APNs 토큰)을
+    등록했고 여기서 Firebase로 보냈는데, Firebase는 APNs 토큰을 받지 않아 iOS 알림이
+    한 번도 도착하지 않았다. 구버전 앱이 남긴 토큰은 기존 Firebase 경로로 둔다.
+    """
+    if _is_expo_token(token):
+        return _send_expo(token, title, body, data)
+    if not firebase_admin._apps:
+        logger.warning("Firebase 미초기화 — 비 Expo 토큰 푸시 스킵")
+        return False
     try:
         message = messaging.Message(
             notification=messaging.Notification(title=title, body=body),

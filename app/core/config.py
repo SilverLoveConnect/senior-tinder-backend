@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     SUPABASE_ANON_KEY: str = ""
     AI_API_URL: str = ""
     AI_IMAGE_API_URL: str = ""
+    # AI 서버(Railway)·사진 검수(Modal)가 요구하는 X-API-Key. 비어 있으면 헤더를 붙이지 않는다.
+    AI_API_KEY: str = ""
     # 포트원 V1
     PORTONE_IMP_KEY: str = ""
     PORTONE_IMP_SECRET: str = ""

@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, create_refresh_token, decode_token
 from app.models.auth import SmsSendLog, SmsVerification
 from app.models.point import Point
+from app.services.content_filter import check_profile_text
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
 
@@ -196,6 +197,7 @@ def register_user(db: Session, data: RegisterRequest) -> dict:
         )
 
     _ensure_sms_verified_for_register(db, data.phone, data.code)
+    check_profile_text("닉네임", data.nickname)
 
     user = User(
         phone=data.phone,
