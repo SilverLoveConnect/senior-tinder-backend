@@ -55,3 +55,12 @@ class UserProfileResponse(BaseModel):
     # 왜 프로필에 안 뜨는지 알 수 없고, 지울 수도 없다(업로드 한도만 찬다).
     pending_photos: list[str] = []
     rejected_photos: list[str] = []
+
+
+class BioSuggestionRequest(BaseModel):
+    # 나이·성별·지역은 서버가 계정 정보로 채운다 — 앱이 보낸 값을 믿지 않는다.
+    keywords: list[str] = Field(min_length=1, max_length=10)
+
+
+class TagNormalizeRequest(BaseModel):
+    tags: list[str] = Field(max_length=30)

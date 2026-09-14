@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
+from app.core.ai import ai_headers
 from app.core.config import settings
 from app.core.dependencies import get_current_user, get_db
 from app.models.matching import Block, ChatMessage, ChatRoom, Match
@@ -91,6 +92,7 @@ def send_message(
                 "content": body.content,
                 "room_id": room_id,
             },
+            headers=ai_headers(),
             timeout=2,
         )
         if res.status_code == 200:

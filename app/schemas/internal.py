@@ -18,7 +18,11 @@ class AIPhotoResultRequest(BaseModel):
     error_message: str | None = None
     # 부적절 필터 모델이 아직 미학습이라 자동 승인/거부 대신 "사람이 봐야 함"을
     # 알려주는 값. True면 자동 승인하지 않고 검수 대기 상태로 둔다.
-    needs_manual_review: bool = False
+    #
+    # 필드가 아예 없으면 True(검수 대기)로 본다. 이전 기본값 False는, 이 필드가 생기기
+    # 전 버전(운영 Modal이 7/6 배포본에 멈춰 있었다)이 보낸 무작위 is_inappropriate를
+    # 그대로 믿어 멀쩡한 인물 사진 4장 중 3장을 자동 거부했다. 모를 땐 사람이 본다.
+    needs_manual_review: bool = True
 
 
 class AIPhotoResultResponse(BaseModel):
