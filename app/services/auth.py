@@ -198,6 +198,7 @@ def register_user(db: Session, data: RegisterRequest) -> dict:
 
     _ensure_sms_verified_for_register(db, data.phone, data.code)
     check_profile_text("닉네임", data.nickname)
+    check_profile_text("이름", data.name)
 
     user = User(
         phone=data.phone,
