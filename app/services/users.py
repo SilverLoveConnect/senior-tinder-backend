@@ -43,6 +43,7 @@ def get_profile(user: User) -> dict:
 def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
     # 다른 회원에게 노출되는 글은 저장 전에 금칙 검사 (Apple 1.2 · Play 사용자 제작 콘텐츠)
     check_profile_text("닉네임", data.nickname)
+    check_profile_text("이름", data.name)
     check_profile_text("자기소개", data.bio)
     check_profile_text("인생 이야기", data.life_story)
     check_profile_text("직업", data.job)
