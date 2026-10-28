@@ -12,6 +12,7 @@ from app.routers import (
     matching,
     payment,
     point,
+    pre_registration,
     report,
     users,
 )
@@ -47,6 +48,7 @@ app.include_router(point.router)
 app.include_router(payment.router)
 app.include_router(internal.router)
 app.include_router(chat.router)
+app.include_router(pre_registration.router)
 
 
 @app.get("/health")
