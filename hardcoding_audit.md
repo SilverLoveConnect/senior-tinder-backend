@@ -50,8 +50,10 @@ REFRESH_TOKEN_EXPIRE_DAYS, FIREBASE_CREDENTIALS_JSON, AI_API_URL, AI_IMAGE_API_U
 AI_API_KEY, PORTONE_IMP_KEY, PORTONE_IMP_SECRET, PAYMENTS_ENABLED,
 SUPABASE_SERVICE_ROLE_KEY, INTERNAL_TOKEN
 ```
-- **왜 문제인가:** 하드코딩은 아니지만, 팀원이 `.env.example`만 보고 `.env`를 만들면 **AI 서버 연동·내부 콜백 인증(`INTERNAL_TOKEN`)이 조용히 꺼진 채로** 돌아간다. 에러가 안 나서 원인 찾기가 어렵다.
+- **왜 문제인가:** 하드코딩은 아니지만, 팀원이 `.env.example`만 보고 `.env`를 만들면 **AI 서버 연동이 조용히 꺼진 채로** 돌아간다(에러 없이 기능만 빠짐). `INTERNAL_TOKEN`은 비어 있으면 `/internal/*`가 503으로 막힌다(`core/dependencies.py:78-85`, 일부러 fail-closed) — 에러는 AI 서버 쪽에 찍혀서 백엔드 개발자는 놓치기 쉽다.
 - **제안:** `.env.example`에 빈 값 + 한 줄 설명으로 추가. 코드 변경 없음, 위험 없음.
+- **반영 중 추가로 발견:** 기존 `AWS_REGION=`(빈 값)을 그대로 복사하면 config 기본값 `ap-northeast-2`를 **빈 문자열로 덮어쓴다** → 사진 URL이 `https://버킷.s3..amazonaws.com/...`으로 깨진다. 실제로 로드해서 확인함. `AWS_REGION=ap-northeast-2`로 채운다. 같은 이유로 `PAYMENTS_ENABLED`는 빈 값이면 bool 파싱 실패로 기동이 안 되므로 `false`를 채워 둔다.
+- ✅ 2026-11-19 반영 완료 (config.py의 모든 설정 키가 `.env.example`에 있음을 대조로 확인)
 
 ### 3-2. [중] 신뢰점수(trust_score) 숫자가 5개 파일에 흩어져 있음
 | 값 | 위치 |
