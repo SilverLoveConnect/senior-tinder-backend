@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.models.user import DEFAULT_TRUST_SCORE
+
 
 class MatchingUserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -14,7 +16,7 @@ class MatchingUserResponse(BaseModel):
     region: str | None = None
     bio: str | None = None
     interests: list[str] | None = None
-    trust_score: int = 50
+    trust_score: int = DEFAULT_TRUST_SCORE
     trust_grade: str = "normal"
     is_verified: bool = False
     photos: list[str] = []

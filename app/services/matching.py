@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy.orm import Session
-from app.models.user import UserProfile
+from app.models.user import DEFAULT_TRUST_SCORE, UserProfile
 from sqlalchemy import and_, func, or_
 from app.models.user import User
 from app.models.matching import Like, Block, LikeStatusEnum, Match, ChatRoom, ChatMessage
@@ -96,7 +96,7 @@ def get_matching_users(
     next_cursor = None
     if has_next and users:
         last = users[-1]
-        last_score = last.profile.trust_score if last.profile else 50
+        last_score = last.profile.trust_score if last.profile else DEFAULT_TRUST_SCORE
         next_cursor = f"{last_score}:{last.id}"
 
     result_users = [
@@ -107,7 +107,7 @@ def get_matching_users(
             "region": user.region,
             "bio": user.profile.bio if user.profile else None,
             "interests": user.profile.interests if user.profile else None,
-            "trust_score": user.profile.trust_score if user.profile else 50,
+            "trust_score": user.profile.trust_score if user.profile else DEFAULT_TRUST_SCORE,
             "trust_grade": user.profile.trust_grade if user.profile else "normal",
             "is_verified": user.profile.is_verified if user.profile else False,
             "photos": [p.s3_url for p in user.photos if p.is_approved],
