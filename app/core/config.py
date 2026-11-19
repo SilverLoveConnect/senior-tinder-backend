@@ -47,9 +47,11 @@ class Settings(BaseSettings):
     PORTONE_IMP_SECRET: str = ""
 
     # 결제(포트원) 엔드포인트 활성화 여부.
-    # 프론트는 PAYMENTS_ENABLED=false로 진입점을 숨겼지만(Apple 3.1.1 회피)
-    # 서버 엔드포인트는 그대로 열려 있어 토큰만 있으면 직접 호출할 수 있었다.
-    # 디지털 재화는 IAP로 전환하기 전까지 서버에서도 닫아 둔다.
+    # 포인트·구독은 디지털 재화라 스토어 인앱결제 정책 대상이다(Google Play 결제 정책,
+    # iOS는 Apple 3.1.1). Android 전용 출시여도 포트원(외부 PG)만으로는 판매할 수 없다.
+    # 프론트는 PAYMENTS_ENABLED=false로 진입점을 숨겼지만 서버 엔드포인트는 그대로 열려
+    # 있어 토큰만 있으면 직접 호출할 수 있었다 — 그래서 서버에서도 닫아 둔다.
+    # 열려면 Play Billing 영수증 검증을 먼저 붙여야 한다.
     PAYMENTS_ENABLED: bool = False
 
     # Supabase
