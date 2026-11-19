@@ -18,6 +18,11 @@ if TYPE_CHECKING:
     from app.models.report import Report
 
 
+# 신뢰점수 기본값 — 프로필이 없을 때 응답에 쓰는 값(services·schemas)과 컬럼 기본값이 같아야 한다.
+# 가감점·등급 규칙은 app/services/manner.py에 있다.
+DEFAULT_TRUST_SCORE = 50
+
+
 class GenderEnum(str, enum.Enum):
     male = "male"
     female = "female"
@@ -141,7 +146,9 @@ class UserProfile(Base, TimestampMixin):
     height: Mapped[int | None] = mapped_column(Integer, nullable=True)
     job: Mapped[str | None] = mapped_column(String, nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    trust_score: Mapped[int] = mapped_column(Integer, default=50, nullable=False)
+    trust_score: Mapped[int] = mapped_column(
+        Integer, default=DEFAULT_TRUST_SCORE, nullable=False
+    )
     trust_grade: Mapped[MannerGradeEnum] = mapped_column(
         SAEnum(MannerGradeEnum), default=MannerGradeEnum.normal, nullable=False
     )

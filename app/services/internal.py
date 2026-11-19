@@ -7,7 +7,7 @@ from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
 from app.models.manner import MannerFactorEnum
 from app.schemas.internal import AIPhotoResultRequest
 from app.services.fcm import notify_photo_approved
-from app.services.manner import update_trust_score
+from app.services.manner import DELTA_PHOTO_APPROVED, update_trust_score
 
 
 def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
@@ -46,7 +46,7 @@ def process_ai_photo_result(db: Session, data: AIPhotoResultRequest) -> dict:
         db=db,
         user=photo.user,
         factor=MannerFactorEnum.image_analysis,
-        delta=15,
+        delta=DELTA_PHOTO_APPROVED,
         reason="프로필 사진 등록 및 얼굴 인식 완료",
     )
 
@@ -104,7 +104,7 @@ def review_photo(db: Session, photo_id: uuid.UUID, approve: bool) -> dict:
         db=db,
         user=photo.user,
         factor=MannerFactorEnum.image_analysis,
-        delta=15,
+        delta=DELTA_PHOTO_APPROVED,
         reason="관리자 검수를 통해 프로필 사진 승인",
     )
     db.commit()

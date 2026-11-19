@@ -3,6 +3,8 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.user import DEFAULT_TRUST_SCORE
+
 
 class FcmTokenRequest(BaseModel):
     fcm_token: str
@@ -47,7 +49,7 @@ class UserProfileResponse(BaseModel):
     interests: list[str] | None = None
     height: int | None = None
     job: str | None = None
-    trust_score: int = 50
+    trust_score: int = DEFAULT_TRUST_SCORE
     trust_grade: str = "normal"
     is_verified: bool = False
     photos: list[str] = []

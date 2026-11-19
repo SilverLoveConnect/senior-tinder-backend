@@ -1,11 +1,17 @@
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.models.matching import ChatRoom, Match
-from app.models.user import PhotoReviewStatusEnum, User, UserPhoto
+from app.models.user import DEFAULT_TRUST_SCORE, PhotoReviewStatusEnum, User, UserPhoto
 from app.services.content_filter import check_profile_text
 from app.services.s3 import delete_photo_objects
 from app.schemas.users import UpdateProfileRequest, UpdateSettingsRequest
-from app.services.manner import has_factor_history, update_trust_score
+from app.services.manner import (
+    DELTA_PROFILE_COMPLETE,
+    PROFILE_COMPLETE_MIN_BIO_LENGTH,
+    PROFILE_COMPLETE_MIN_PHOTOS,
+    has_factor_history,
+    update_trust_score,
+)
 from app.models.manner import MannerFactorEnum
 
 
@@ -23,7 +29,7 @@ def get_profile(user: User) -> dict:
         "interests": user.profile.interests if user.profile else None,
         "height": user.profile.height if user.profile else None,
         "job": user.profile.job if user.profile else None,
-        "trust_score": user.profile.trust_score if user.profile else 50,
+        "trust_score": user.profile.trust_score if user.profile else DEFAULT_TRUST_SCORE,
         "trust_grade": user.profile.trust_grade if user.profile else "normal",
         "is_verified": user.profile.is_verified if user.profile else False,
         "photos": [p.s3_url for p in user.photos if p.is_approved],
@@ -71,16 +77,23 @@ def update_profile(db: Session, user: User, data: UpdateProfileRequest) -> dict:
         bio_length = len(user.profile.bio or "")
 
         # 프로필 완성 가점은 계정당 한 번뿐이다. 가드가 없으면 저장 버튼을
-        # 누를 때마다 +10이 누적돼 신뢰점수를 무한히 올릴 수 있다.
-        if (photo_count >= 3 or bio_length >= 100) and not has_factor_history(
+        # 누를 때마다 가점이 누적돼 신뢰점수를 무한히 올릴 수 있다.
+        is_complete = (
+            photo_count >= PROFILE_COMPLETE_MIN_PHOTOS
+            or bio_length >= PROFILE_COMPLETE_MIN_BIO_LENGTH
+        )
+        if is_complete and not has_factor_history(
             db, user, MannerFactorEnum.profile
         ):
             update_trust_score(
                 db=db,
                 user=user,
                 factor=MannerFactorEnum.profile,
-                delta=10,
-                reason="프로필 완성도 달성 (사진 3장+, 자기소개 100자+)",
+                delta=DELTA_PROFILE_COMPLETE,
+                reason=(
+                    f"프로필 완성도 달성 (사진 {PROFILE_COMPLETE_MIN_PHOTOS}장+, "
+                    f"자기소개 {PROFILE_COMPLETE_MIN_BIO_LENGTH}자+)"
+                ),
             )
     db.commit()
     db.refresh(user)
