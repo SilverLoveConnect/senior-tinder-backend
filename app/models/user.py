@@ -62,6 +62,12 @@ class User(Base, TimestampMixin):
     marketing_consent: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=text("false"), nullable=False
     )
+    # 출시 전 사전 신청자가 같은 번호로 가입했는지. 처리방침상 사전 신청 정보는
+    # 가입 즉시 파기하고 이 값 하나만 남긴다(보유: 회원 탈퇴 시까지).
+    # 유료 기능 3개월 무료 혜택(2단계)의 판정 근거.
+    is_founding_member: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("false"), nullable=False
+    )
 
     profile: Mapped["UserProfile"] = relationship(
         "UserProfile", back_populates="user", uselist=False, lazy="select"

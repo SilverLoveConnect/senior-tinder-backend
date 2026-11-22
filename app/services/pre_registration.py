@@ -149,3 +149,32 @@ def summary(db: Session) -> PreRegistrationSummary:
         by_region_gender={k: dict(v) for k, v in by_region_gender.items()},
         by_source=dict(by_source),
     )
+
+
+# 창립 회원 혜택 대상: 출시 안내(notified_at) 후 이 기간 안에 같은 번호로 가입한 사람.
+# 사전 신청 정보 보유기간(출시 안내 후 6개월)과 같은 값이다 — 처리방침 제5조.
+FOUNDING_MEMBER_WINDOW = timedelta(days=183)
+
+
+def claim_founding_member(db: Session, phone: str) -> bool:
+    """회원 가입 시 사전 신청 명단과 번호를 한 번 대조한다.
+
+    - 신청 행이 있으면 **대상 여부와 상관없이 즉시 삭제**한다(처리방침: 가입하면
+      창립 회원 여부만 남기고 신청 정보는 즉시 파기).
+    - 반환값: 창립 회원이면 True. 출시 안내 전(notified_at 없음)이거나 안내 후
+      6개월 이내면 대상이다.
+    - commit하지 않는다. 호출부(register_user)가 회원 생성과 한 트랜잭션으로 커밋해야
+      "회원은 생겼는데 신청 정보가 남는" 상태나 그 반대가 생기지 않는다.
+    """
+    digits = re.sub(r"\D", "", phone)
+    row = db.query(PreRegistration).filter(PreRegistration.phone == digits).first()
+    if row is None:
+        return False
+
+    notified = row.notified_at
+    if notified is not None and notified.tzinfo is None:
+        notified = notified.replace(tzinfo=timezone.utc)
+    eligible = notified is None or datetime.now(timezone.utc) - notified <= FOUNDING_MEMBER_WINDOW
+
+    db.delete(row)
+    return eligible
