@@ -27,7 +27,9 @@ GYEONGGI = (
 )
 ALLOWED_REGIONS = {"서울", "기타"} | {f"경기 {c}" for c in GYEONGGI}
 
-PHONE_RE = re.compile(r"^01[016789]\d{7,8}$")
+# 앱 가입(schemas/auth.py)과 같은 규칙. 011 등으로 사전 신청은 되는데 앱 가입·창립 회원
+# 대조는 안 되는 불일치를 막는다(hardcoding_audit 3-3).
+PHONE_RE = re.compile(r"^010\d{8}$")
 SOURCE_RE = re.compile(r"^[a-z0-9_-]{1,30}$")
 
 # ── 도배 방지 (프로세스 메모리 기반) ─────────────────────────────────────────

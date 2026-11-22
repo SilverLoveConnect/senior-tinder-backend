@@ -124,9 +124,17 @@ def get_matching_users(
 
 def like_user(db: Session, current_user: User, target_user_id: str) -> dict:
     target_user = db.query(User).filter(User.id == target_user_id).first()
-    if not target_user:
+    # 정지·탈퇴 회원은 응답할 수 없으므로 없는 회원과 똑같이 다룬다(존재 여부를 흘리지 않음).
+    if not target_user or target_user.is_banned or not target_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="존재하지 않는 유저입니다."
+        )
+    # 자기 자신에게 좋아요를 보내면 그 좋아요가 '상대의 좋아요'로도 잡혀
+    # 자기와 매칭·채팅방이 생기고 매칭 푸시까지 간다(Android QA P1-1).
+    if target_user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="본인에게는 좋아요를 보낼 수 없습니다.",
         )
     # 차단 관계면 좋아요 자체를 막는다. 피드에서 걸러도 API를 직접 부르면
     # 매칭이 성사돼 채팅방까지 생기므로 여기서도 검사해야 한다.

@@ -101,5 +101,28 @@ def seed() -> None:
     print(f"생성된 더미 유저 수: {created_count}명")
 
 
+LOCAL_DB_HOSTS = {"localhost", "127.0.0.1", "::1"}
+
+
+def _refuse_remote_db() -> None:
+    """프로덕션 실행 금지 가드.
+
+    이 스크립트의 더미 번호는 하이픈 형식(010-9000-xxxx)이라 로그인이 안 되는데도
+    추천 목록에는 뜬다. 운영 DB에 들어가면 실회원에게 가짜 회원 20명이 보인다.
+    로컬 DB가 아니면 SEED_ALLOW_REMOTE=1을 명시해야만 실행된다.
+    """
+    import os
+    from sqlalchemy.engine import make_url
+
+    url = os.environ.get("DATABASE_URL", "")
+    host = make_url(url).host if url else None
+    if host not in LOCAL_DB_HOSTS and os.environ.get("SEED_ALLOW_REMOTE") != "1":
+        sys.exit(
+            f"중단: 로컬 DB가 아닙니다(host={host}). 더미 회원을 운영 DB에 넣지 않도록 막았습니다.\n"
+            "정말 원격 개발 DB라면 SEED_ALLOW_REMOTE=1 을 붙여 실행하세요."
+        )
+
+
 if __name__ == "__main__":
+    _refuse_remote_db()
     seed()

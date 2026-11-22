@@ -3,7 +3,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
@@ -17,8 +17,19 @@ from app.services.fcm import notify_new_message
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
+# 앱 입력창 제한과 같은 값. 앱은 이미 막지만 API를 직접 부르면 빈 메시지·무제한 길이가 저장됐다.
+MESSAGE_MAX_LENGTH = 500
+
+
 class SendMessageRequest(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=MESSAGE_MAX_LENGTH)
+
+    @field_validator("content")
+    @classmethod
+    def _not_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("메시지 내용을 입력해주세요.")
+        return v
 
 
 def _get_room_or_403(db: Session, room_id: str, current_user: User) -> ChatRoom:

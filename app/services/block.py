@@ -13,6 +13,10 @@ def create_block(db: Session, current_user: User, target_user_id: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="등록되지 않은 회원입니다."
         )
+    if target_user.id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="본인은 차단할 수 없습니다."
+        )
 
     existing = (
         db.query(Block)
