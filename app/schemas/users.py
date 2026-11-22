@@ -52,6 +52,8 @@ class UserProfileResponse(BaseModel):
     trust_score: int = DEFAULT_TRUST_SCORE
     trust_grade: str = "normal"
     is_verified: bool = False
+    # 본인 화면(/users/me)에서만 내려간다. 추천 카드 등 남에게 보이는 응답에는 넣지 않는다.
+    is_founding_member: bool = False
     photos: list[str] = []
     # 승인 대기·거부된 사진. 이 값이 없으면 사용자는 자기가 올린 사진이
     # 왜 프로필에 안 뜨는지 알 수 없고, 지울 수도 없다(업로드 한도만 찬다).

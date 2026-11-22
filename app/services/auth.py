@@ -11,6 +11,7 @@ from app.core.security import create_access_token, create_refresh_token, decode_
 from app.models.auth import SmsSendLog, SmsVerification
 from app.models.point import Point
 from app.services.content_filter import check_profile_text
+from app.services.pre_registration import claim_founding_member
 from app.models.user import User, UserProfile
 from app.schemas.auth import RegisterRequest
 
@@ -208,6 +209,8 @@ def register_user(db: Session, data: RegisterRequest) -> dict:
         gender=data.gender,
         region=data.region,
         marketing_consent=data.marketing_consent,
+        # 사전 신청 행은 여기서 삭제되고 아래 commit으로 회원 생성과 함께 확정된다.
+        is_founding_member=claim_founding_member(db, data.phone),
     )
     db.add(user)
     db.flush()

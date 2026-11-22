@@ -32,6 +32,7 @@ def get_profile(user: User) -> dict:
         "trust_score": user.profile.trust_score if user.profile else DEFAULT_TRUST_SCORE,
         "trust_grade": user.profile.trust_grade if user.profile else "normal",
         "is_verified": user.profile.is_verified if user.profile else False,
+        "is_founding_member": bool(user.is_founding_member),
         "photos": [p.s3_url for p in user.photos if p.is_approved],
         "pending_photos": [
             p.s3_url
