@@ -90,6 +90,21 @@ def update_fcm_token(
     return {"message": "저장 완료"}
 
 
+@router.delete("/me/fcm-token", status_code=204)
+def delete_fcm_token(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """푸시 토큰 삭제 — 로그아웃·'알림 받기' 끄기 때 앱이 부른다.
+
+    토큰이 남아 있으면 로그아웃한 기기에 메시지 알림(상대 닉네임 + 본문 앞 50자)이
+    계속 간다(Android QA P1-2). 이미 없으면 그대로 204(멱등).
+    """
+    if current_user.fcm_token is not None:
+        current_user.fcm_token = None
+        db.commit()
+
+
 @router.post("/me/photos")
 def upload_photo(
     file: UploadFile = File(...),
